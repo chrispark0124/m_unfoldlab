@@ -48,8 +48,13 @@
     const tabHistory = [];
     let isBackNav = false;
 
-    // 백엔드(Express + MongoDB) API 서버 주소
-    const API_BASE_URL = "";
+// app.js의 기존 getApiBaseUrl 함수를 아래처럼 한 줄로 고치세요.
+    const getApiBaseUrl = () => {
+    // 상대 경로를 사용하면 브라우저가 자동으로 현재 서버 주소(munfoldlab.com)를 찾아갑니다.
+        return ""; 
+    };
+
+    const API_BASE_URL = getApiBaseUrl();
 
     // ---- 강제 캐시/서비스워커 갱신 (배포 버전 구분용) ----
     const APP_VERSION = '2025-12-29-comment-count-v2';
