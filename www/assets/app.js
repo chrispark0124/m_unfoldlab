@@ -49,17 +49,7 @@
     let isBackNav = false;
 
     // 백엔드(Express + MongoDB) API 서버 주소
-    const API_BASE_URL = (() => {
-        // 1) 전역 오버라이드
-        if (window.APP_API_BASE_URL) return window.APP_API_BASE_URL;
-        const host = window.location.hostname;
-        // 2) 로컬/웹 실행
-        if (host === 'localhost' || host === '127.0.0.1') return 'https://munfoldlab.com/';
-        // 3) Capacitor 안드로이드 에뮬레이터 → host loopback
-        if (window.Capacitor) return 'https://munfoldlab.com/';
-        // 4) 기본(배포)
-        return 'https://munfoldlab.com/';
-    })();
+    const API_BASE_URL = "";
 
     // ---- 강제 캐시/서비스워커 갱신 (배포 버전 구분용) ----
     const APP_VERSION = '2025-12-29-comment-count-v2';
