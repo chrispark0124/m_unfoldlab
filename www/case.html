@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Unfold - 나의 사건 관리</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #F1F5F9;
+            display: flex;
+            flex-direction: column;
+        }
+        .mobile-frame {
+            min-height: 100vh;
+            width: 100%;
+            background-color: #ffffff;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 65px;
+        }
+        .top-nav { 
+            height: 65px; background: white; border-top: 1px solid #E2E8F0; 
+            display: flex; justify-content: space-between; align-items: center; 
+            position: fixed; bottom: 0; left: 0; right: 0; max-width: 420px; margin: 0 auto;
+            z-index: 50; flex-shrink: 0; padding: 0 10px;
+        }
+        .nav-item { 
+            flex: 1; height: 100%; border: none; background: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            color: #94A3B8; font-size: 10px; font-weight: 500; cursor: pointer; 
+            -webkit-tap-highlight-color: transparent; gap: 4px;
+        }
+        .nav-item i { font-size: 18px; margin-bottom: 2px; }
+        .nav-item.active { color: #10B981; font-weight: 800; }
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+            background-color: #F8FAFC;
+            scroll-behavior: smooth;
+            display: flex;
+            flex-direction: column;
+        }
+        .content-area::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="mobile-frame">
+    <!-- 하단 탭 -->
+    <div class="top-nav">
+        <button onclick="navigate('home')" class="nav-item" id="nav-home">
+            <i class="fas fa-home"></i><span>홈</span>
+        </button>
+        <button onclick="navigate('case')" class="nav-item active" id="nav-case">
+            <i class="fas fa-folder-open"></i><span>내 사건</span>
+        </button>
+        <button onclick="navigate('expert')" class="nav-item" id="nav-expert">
+            <i class="fas fa-user-tie"></i><span>전문가</span>
+        </button>
+        <button onclick="navigate('community')" class="nav-item" id="nav-community">
+            <i class="fas fa-comments"></i><span>고민상담</span>
+        </button>
+        <button onclick="navigate('menu')" class="nav-item" id="nav-menu">
+            <i class="fas fa-bars"></i><span>메뉴</span>
+        </button>
+    </div>
+
+    <div class="content-area">
+        <!-- 나의 사건 관리 화면 -->
+        <div class="pt-12 px-10 bg-slate-50 h-full w-full"> 
+            <div class="px-6 mb-6">
+                <h2 class="text-2xl font-bold text-slate-800">나의 사건 관리</h2>
+            </div>
+
+            <!-- 빈 상태 -->
+            <div class="mx-6 bg-white p-8 rounded-3xl shadow-sm border border-slate-100 mb-6 text-center flex flex-col items-center">
+                <div class="w-16 h-16 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center text-2xl mb-4">
+                    <i class="fas fa-folder-open"></i>
+                </div>
+                <p class="text-lg font-bold text-slate-800 mb-2">등록된 사건이 없습니다</p>
+                <p class="text-sm text-slate-500 mb-4">새 사건을 등록하거나 상담을 요청해보세요.</p>
+                <div class="flex gap-2">
+                    <button onclick="navigate('expert')" class="px-4 py-2 bg-emerald-500 text-white text-sm font-bold rounded-full hover:bg-emerald-600 active:scale-95 transition">전문가 찾기</button>
+                    <button onclick="navigate('home')" class="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-bold rounded-full hover:bg-slate-200 active:scale-95 transition">상담 요청</button>
+                </div>
+            </div>
+
+            <!-- 안내 카드 -->
+            <div class="mx-6 pb-24 space-y-3">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                    <p class="text-sm font-bold text-slate-800 mb-1">이렇게 해보세요</p>
+                    <ul class="text-xs text-slate-600 space-y-1 list-disc list-inside text-left">
+                        <li>전문가 프로필을 보고 바로 상담 요청</li>
+                        <li>사건 내용을 간단히 남기면 맞춤 변호사 추천</li>
+                        <li>필요 서류는 상담 후에 안전하게 업로드</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function navigate(tab) {
+        if (tab === 'home') window.location.href = 'index.html';
+        else if (tab === 'case') window.location.href = 'case.html';
+        else if (tab === 'expert') window.location.href = 'expert.html';
+        else if (tab === 'community') window.location.href = 'community.html';
+        else if (tab === 'menu') window.location.href = 'menu.html';
+    }
+
+    // 빈 상태 화면이라 추가 스크립트는 없습니다.
+</script>
+
+</body>
+</html>
+
+

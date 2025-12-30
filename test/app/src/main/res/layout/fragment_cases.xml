@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/slate_50"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="나의 사건 관리"
+            android:textColor="#0f172a"
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:layout_marginBottom="12dp"/>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            card_view:cardCornerRadius="22dp"
+            card_view:cardElevation="6dp"
+            xmlns:card_view="http://schemas.android.com/apk/res-auto">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="18dp"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="2023가단 54xx 전세금 반환"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:textColor="@color/text_primary"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="12dp">
+
+                        <ImageView
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:src="@android:drawable/sym_def_app_icon"
+                            android:background="@color/slate_100"
+                            android:padding="6dp"
+                            android:layout_marginEnd="10dp"/>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="담당 파트너"
+                                android:textSize="12sp"
+                                android:textColor="@color/slate_500"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="김철수 변호사"
+                                android:textStyle="bold"
+                                android:textSize="14sp"
+                                android:textColor="@color/text_primary"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <ProgressBar
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="10dp"
+                        android:layout_marginTop="16dp"
+                        android:progress="75"
+                        android:progressTint="@color/accent_green"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="75% 진행중"
+                        android:textSize="12sp"
+                        android:textColor="@color/accent_green"
+                        android:layout_marginTop="6dp"/>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="진행중"
+                    android:background="@drawable/bg_pill_green"
+                    android:textColor="@color/accent_green"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp"
+                    android:layout_margin="12dp"
+                    android:layout_gravity="top|end"/>
+            </FrameLayout>
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="사건 전담 AI"
+            android:textColor="#0f172a"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp"/>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            card_view:cardCornerRadius="18dp"
+            card_view:cardElevation="2dp">
+
+            <LinearLayout
+                android:id="@+id/ai_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical"
+                android:background="@color/nav_bg_dark">
+
+                <LinearLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@color/accent_green"
+                    android:gravity="center"
+                    android:padding="8dp"
+                    android:layout_marginEnd="10dp">
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_dialog_info"
+                        android:tint="@android:color/white"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="사건 전담 AI와 대화하기"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:textColor="@android:color/white"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="진행상황·승소율을 물어보세요."
+                        android:textSize="12sp"
+                        android:textColor="#cbd5e1"
+                        android:layout_marginTop="4dp"/>
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@android:drawable/ic_media_next"
+                    android:tint="#cbd5e1"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="증거 서류 관리"
+            android:textColor="#0f172a"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="4dp"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="8dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@android:drawable/ic_menu_save"
+                        android:tint="#ef4444"
+                        android:layout_marginEnd="10dp"/>
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="임대차계약서.pdf"
+                            android:textStyle="bold"
+                            android:textColor="#0f172a"
+                            android:textSize="13sp"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="2023.09.20 업로드"
+                            android:textColor="#94a3b8"
+                            android:textSize="11sp"/>
+                    </LinearLayout>
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/checkbox_on_background"
+                        android:tint="#10b981"/>
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
+

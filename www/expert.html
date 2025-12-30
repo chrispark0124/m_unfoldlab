@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Unfold - 분야별 전문가</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #F1F5F9;
+            display: flex;
+            flex-direction: column;
+        }
+        .mobile-frame {
+            min-height: 100vh;
+            width: 100%;
+            background-color: #ffffff;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 65px;
+        }
+        .top-nav { 
+            height: 65px; background: white; border-top: 1px solid #E2E8F0; 
+            display: flex; justify-content: space-between; align-items: center; 
+            position: fixed; bottom: 0; left: 0; right: 0; max-width: 420px; margin: 0 auto;
+            z-index: 50; flex-shrink: 0; padding: 0 10px;
+        }
+        .nav-item { 
+            flex: 1; height: 100%; border: none; background: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            color: #94A3B8; font-size: 10px; font-weight: 500; cursor: pointer; 
+            -webkit-tap-highlight-color: transparent; gap: 4px;
+        }
+        .nav-item i { font-size: 18px; margin-bottom: 2px; }
+        .nav-item.active { color: #10B981; font-weight: 800; }
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+            background-color: #F8FAFC;
+            scroll-behavior: smooth;
+            display: flex;
+            flex-direction: column;
+        }
+        .content-area::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="mobile-frame">
+    <!-- 하단 탭 -->
+    <div class="top-nav">
+        <button onclick="navigate('home')" class="nav-item" id="nav-home">
+            <i class="fas fa-home"></i><span>홈</span>
+        </button>
+        <button onclick="navigate('case')" class="nav-item" id="nav-case">
+            <i class="fas fa-folder-open"></i><span>내 사건</span>
+        </button>
+        <button onclick="navigate('expert')" class="nav-item active" id="nav-expert">
+            <i class="fas fa-user-tie"></i><span>전문가</span>
+        </button>
+        <button onclick="navigate('community')" class="nav-item" id="nav-community">
+            <i class="fas fa-comments"></i><span>고민상담</span>
+        </button>
+        <button onclick="navigate('menu')" class="nav-item" id="nav-menu">
+            <i class="fas fa-bars"></i><span>메뉴</span>
+        </button>
+    </div>
+
+    <div class="content-area">
+        <!-- 전문가 화면 -->
+        <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+            <div class="mb-4 flex-shrink-0">
+                <h2 class="text-2xl font-bold text-slate-800">분야별 전문가</h2>
+                <p class="text-sm text-slate-500">Unfold가 보증하는 Top-Tier입니다.</p>
+            </div>
+
+            <div class="flex gap-2 overflow-x-auto hide-scrollbar mb-4 pb-2 flex-shrink-0">
+                <button onclick="filterExperts('전체')" class="filter-btn active px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold transition whitespace-nowrap" data-cat="전체">전체</button>
+                <button onclick="filterExperts('형사')" class="filter-btn px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold transition whitespace-nowrap" data-cat="형사">⚖️ 형사</button>
+                <button onclick="filterExperts('이혼')" class="filter-btn px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold transition whitespace-nowrap" data-cat="이혼">💔 이혼</button>
+                <button onclick="filterExperts('부동산')" class="filter-btn px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold transition whitespace-nowrap" data-cat="부동산">🏠 부동산</button>
+            </div>
+
+            <div id="expert-list-area" class="space-y-3 pb-24 flex-1"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE_URL = 'https://app.unfoldlab-legalpro.com';
+    let expertsData = [];
+
+    function navigate(tab) {
+        if (tab === 'home') window.location.href = 'index.html';
+        else if (tab === 'case') window.location.href = 'case.html';
+        else if (tab === 'expert') window.location.href = 'expert.html';
+        else if (tab === 'community') window.location.href = 'community.html';
+        else if (tab === 'menu') window.location.href = 'menu.html';
+    }
+
+    async function fetchExpertsData() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/experts`, {
+                method: 'GET',
+                mode: 'cors',
+            });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            expertsData = await response.json();
+        } catch (e) {
+            console.error(e);
+            // 실패 시 샘플 데이터
+            expertsData = [
+                { firstName: '김', lastName: '형사', category: '형사', tag: '형사사건 전문', desc: '구속/영장, 폭행, 사기 사건 다수 수행', profileImage: '' },
+                { firstName: '이', lastName: '이혼', category: '이혼', tag: '이혼/가사 전문', desc: '재산분할, 양육권 분쟁 풍부한 경험', profileImage: '' },
+                { firstName: '박', lastName: '부동산', category: '부동산', tag: '부동산 전문', desc: '전세사기, 경매, 임대차 분쟁 대응', profileImage: '' },
+            ];
+        }
+        filterExperts('전체');
+    }
+
+    function filterExperts(category) {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            if(btn.dataset.cat === category) {
+                btn.classList.add('bg-slate-800', 'text-white');
+                btn.classList.remove('bg-slate-100', 'text-slate-500');
+            } else {
+                btn.classList.remove('bg-slate-800', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-500');
+            }
+        });
+
+        const container = document.getElementById('expert-list-area');
+        if (!container) return;
+        container.innerHTML = `<p class="text-[11px] font-bold text-emerald-600 mb-3 px-1">● ${category} 전문 파트너 실시간 연결 가능</p>`;
+
+        expertsData.forEach((expert) => {
+            if (category !== '전체' && expert.category !== category) return;
+            container.innerHTML += `
+                <div class="bg-white border border-slate-100 rounded-2xl p-4 flex gap-4 items-start shadow-sm mb-3">
+                    <div class="w-12 h-12 rounded-full bg-slate-100 overflow-hidden flex-shrink-0">
+                        <img src="${expert.profileImage || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?fit=crop&w=200&h=200'}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-1 mb-1">
+                            <h3 class="font-bold text-slate-800 text-sm">${expert.firstName} ${expert.lastName}</h3>
+                            <i class="fas fa-check-circle text-blue-500 text-[10px]"></i>
+                        </div>
+                        <span class="inline-block bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded mb-2">${expert.category} 전문</span>
+                        <p class="text-xs text-slate-400 line-clamp-1">"${expert.desc || ''}"</p>
+                        <div class="flex gap-2 mt-3">
+                            <button class="flex-1 bg-slate-50 text-slate-600 py-2 rounded-lg text-xs font-bold hover:bg-emerald-50 hover:text-emerald-600 transition-colors" onclick="alert('앱 내 채팅에서 연결됩니다.')">채팅</button>
+                            <button class="flex-1 bg-emerald-50 text-emerald-600 py-2 rounded-lg text-xs font-bold hover:bg-emerald-500 hover:text-white transition-colors" onclick="alert('전화 연결은 추후 제공 예정입니다.')">전화</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchExpertsData();
+    });
+</script>
+
+</body>
+</html>
+
+
+

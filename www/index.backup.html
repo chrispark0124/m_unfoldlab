@@ -1,0 +1,2507 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+    <title>Unfold: Final Service with Community</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* 기존 디자인 스타일 완전 유지 */
+        * { box-sizing: border-box; }
+        /* [Emergency Fix] Body 고정 - 키보드 밀림 방지의 핵심 */
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* 스크롤 차단 */
+            position: fixed; /* 브라우저가 body를 밀어올리지 못하도록 고정 */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: white; /* [Fix] 배경색 통일 (하단 틈새 방지) */
+            touch-action: none;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 채팅 화면: 표시만 제어 (내부 요소는 fixed) */
+        #screen-chat {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%; height: 100%;
+            background-color: white;
+            z-index: 9000;
+            overflow: hidden;
+        }
+        #screen-chat.active { display: block; }
+
+        /* 1. 상단: 헤더 (Flex Item) */
+        .chat-header {
+            position: relative;
+            flex: none;
+            width: 100%;
+            /* height는 padding 포함하여 자동 결정되거나 min-height 사용 */
+            min-height: 72px;
+            background-color: white;
+            z-index: 20000;
+            border-bottom: 1px solid #E2E8F0;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+            
+            padding-top: calc(env(safe-area-inset-top, 12px) + 8px);
+            padding-bottom: 10px;
+            padding-left: 16px;
+            padding-right: 16px;
+            
+            display: flex;
+            align-items: center;
+        }
+
+        /* 2. 하단: 입력창 (Flex Item) */
+        .chat-input-area {
+            position: fixed;
+            bottom: var(--kb-offset, 0px);
+            left: 0;
+            width: 100%;
+            min-height: 60px;
+            background-color: white;
+            border-top: 1px solid #F1F5F9;
+            z-index: 20000;
+            box-shadow: 0 -2px 6px rgba(15, 23, 42, 0.05);
+            
+            padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px)) 12px;
+            transition: padding-bottom 0.1s;
+        }
+        
+        .chat-input-area:focus-within {
+            padding-bottom: 12px; 
+        }
+
+        /* 3. 중간: 채팅 내용 (헤더~입력창 사이) */
+        #chat-body {
+            position: fixed;
+            top: 72px; /* 헤더 높이 */
+            bottom: calc(76px + var(--kb-offset, 0px)); /* 입력창 높이(대략 60~70) + 키보드 오프셋 */
+            left: 0;
+            width: 100%;
+            overflow-y: auto;
+            background-color: #F8FAFC;
+            z-index: 12000;
+            min-height: 0;
+            
+            padding: 20px 16px 12px 16px;
+            
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+        }
+        
+        .mobile-frame {
+            width: 100%; 
+            height: 100%; 
+            background-color: #ffffff;
+            position: relative; 
+            overflow: hidden; /* 내부 스크롤만 허용 */
+            display: flex; 
+            flex-direction: column;
+        }
+
+        .top-nav { 
+            height: 65px; background: white; border-top: 1px solid #E2E8F0; 
+            display: flex; justify-content: space-between; align-items: center; 
+            position: absolute; bottom: 0; left: 0; right: 0; max-width: 420px; margin: 0 auto;
+            z-index: 50; flex-shrink: 0; padding: 0 10px;
+        }
+        .nav-item { 
+            flex: 1; height: 100%; border: none; background: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            color: #94A3B8; font-size: 10px; font-weight: 500; cursor: pointer; 
+            -webkit-tap-highlight-color: transparent; gap: 4px;
+        }
+        .nav-item i { font-size: 18px; margin-bottom: 2px; }
+        .nav-item.active { color: #10B981; font-weight: 800; }
+
+        .content-area { flex: 1; overflow-y: auto; position: relative; background-color: #F8FAFC; scroll-behavior: smooth; }
+        .content-area::-webkit-scrollbar { display: none; }
+
+        .case-status-btn {
+            background-color: #1e293b; color: white; padding: 8px 16px; border-radius: 50px;
+            font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: absolute; top: 60px; left: 20px; z-index: 40; cursor: pointer;
+            opacity: 1; transform: translateY(0);
+        }
+        .case-status-btn.hidden-btn { opacity: 0; transform: translateY(-20px); pointer-events: none; }
+        
+        .screen { display: none; min-height: 100%; width: 100%; flex-direction: column; }
+        .screen.active { display: flex; animation: fadeIn 0.2s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* 댓글 익명 토글 */
+        #comment-anon-toggle {
+            background-color: #cbd5e1;
+        }
+        #comment-anon-toggle.on {
+            background-color: #10b981;
+        }
+        #comment-anon-thumb {
+            transition: transform 0.2s ease;
+        }
+
+        /* 투표 입력 - 모바일 오버플로 방지 */
+        .vote-inputs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .vote-inputs input {
+            flex: 1 1 100%;
+            min-width: 0;
+        }
+        @media (min-width: 420px) {
+            .vote-inputs input {
+                flex: 1 1 0;
+            }
+        }
+
+        /* 익명 토글 (작성 폼) - 다크 모드 대비 */
+        .anon-row {
+            background: #f8fafc;
+        }
+        body.dark-mode .anon-row {
+            background: #0f172a;
+        }
+        .anon-avatar {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+        .anon-title {
+            color: #1f2937;
+        }
+        .anon-subtitle {
+            color: #94a3b8;
+        }
+        body.dark-mode .anon-avatar {
+            background: #cbd5e1;
+            color: #0f172a;
+        }
+        body.dark-mode .anon-title {
+            color: #e2e8f0;
+        }
+        body.dark-mode .anon-subtitle {
+            color: #94a3b8;
+        }
+        body.dark-mode #community-anon-track {
+            background: #0ea5e9;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+        }
+        body.dark-mode #community-anon-knob {
+            background: #0b1120;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
+        }
+
+        /* 알림 토글 */
+        .toggle-track {
+            background: #e2e8f0;
+        }
+        .toggle-track.on {
+            background: #10b981;
+        }
+        .toggle-knob {
+            transition: transform 0.2s ease;
+        }
+        body.dark-mode .toggle-track {
+            background: #e2e8f0;
+        }
+        body.dark-mode .toggle-track.on {
+            background: #10b981;
+        }
+        body.dark-mode .toggle-knob {
+            background: #e2e8f0;
+        }
+
+        /* 고민상담 상세 레이아웃 */
+        #screen-community-detail {
+            height: 100%;
+            max-height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        #community-detail-body {
+            flex: 1;
+            overflow-y: auto;
+        }
+        #community-comment-bar {
+            position: relative;
+            bottom: auto;
+            background: transparent;
+            z-index: 1;
+        }
+
+        .chat-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+        .chat-row.me {
+            justify-content: flex-end;
+        }
+        .chat-row.you {
+            justify-content: flex-start;
+        }
+        .chat-time {
+            font-size: 10px;
+            color: #94A3B8;
+            margin-bottom: 2px;
+            flex-shrink: 0;
+        }
+        .chat-bubble { max-width: 75%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; margin-bottom: 0; word-break: break-all; }
+        .chat-me { background-color: #10B981; color: white; align-self: flex-end; border-bottom-right-radius: 4px; box-shadow: 0 2px 5px rgba(16, 185, 129, 0.2); }
+        .chat-you { background-color: white; color: #334155; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #E2E8F0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .chat-ai { background-color: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; align-self: flex-start; border-bottom-left-radius: 4px; }
+
+        .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 999; justify-content: center; align-items: center; animation: fadeIn 0.3s forwards; backdrop-filter: blur(2px); }
+        .modal-content { 
+            background: white; width: 280px;
+            border-radius: 24px; padding: 0; transform: scale(0.8); opacity: 0; 
+            animation: popUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards 0.1s; 
+            overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); 
+        }
+        @keyframes popUp { to { transform: scale(1); opacity: 1; } }
+        
+        .scanner-line { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: #10B981; box-shadow: 0 0 20px 2px #10B981; animation: scan 2s infinite ease-in-out; }
+        @keyframes scan { 0% { top: 0%; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+        
+        .toast {
+            position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%);
+            background-color: rgba(15, 23, 42, 0.95); color: white;
+            padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;
+            display: none; animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 9999; white-space: nowrap;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        /* 프로필 이미지 원형 크롭 */
+        .avatar-auto {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
+        @keyframes slideUp { from { bottom: 70px; opacity: 0; transform: translateX(-50%) scale(0.9); } to { bottom: 90px; opacity: 1; transform: translateX(-50%) scale(1); } }
+
+        .spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top: 4px solid #10B981; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .vote-bar { transition: width 0.5s ease-out; }
+        .write-btn {
+            position: absolute; bottom: 80px; right: 20px;
+            width: 56px; height: 56px; background-color: #1e293b; color: white;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(30, 41, 59, 0.3); z-index: 40;
+            transition: transform 0.2s; cursor: pointer;
+        }
+        .write-btn:active { transform: scale(0.9); }
+
+        /* 다크 모드 테마 (복구) */
+        body.dark-mode {
+            background-color: #020617;
+            color: #e2e8f0;
+        }
+        body.dark-mode .mobile-frame {
+            background-color: #020617;
+            color: #e2e8f0;
+        }
+        body.dark-mode .content-area {
+            background-color: #020617;
+        }
+        body.dark-mode .top-nav {
+            background-color: #020617;
+            border-top-color: #1f2937;
+        }
+        body.dark-mode .nav-item {
+            color: #64748b;
+        }
+        body.dark-mode .nav-item.active {
+            color: #22c55e;
+        }
+        body.dark-mode .bg-white {
+            background-color: #0f172a !important;
+        }
+        body.dark-mode .text-slate-800 {
+            color: #e5e7eb !important;
+        }
+        body.dark-mode .text-slate-700 {
+            color: #e5e7eb !important;
+        }
+        body.dark-mode .text-slate-600,
+        body.dark-mode .text-slate-500,
+        body.dark-mode .text-slate-400 {
+            color: #94a3b8 !important;
+        }
+        body.dark-mode .border-slate-100,
+        body.dark-mode .border-slate-200,
+        body.dark-mode .border-slate-300 {
+            border-color: #1f2937 !important;
+        }
+        body.dark-mode .bg-slate-50 {
+            background-color: #020617 !important;
+        }
+        body.dark-mode .bg-slate-100 {
+            background-color: #1e293b !important;
+        }
+        /* 다크모드 채팅 */
+        body.dark-mode #screen-chat, 
+        body.dark-mode .chat-header,
+        body.dark-mode .chat-input-area {
+            background-color: #0f172a !important;
+            border-color: #1f2937 !important;
+        }
+        body.dark-mode .chat-header h3,
+        body.dark-mode .chat-header .fa-arrow-left,
+        body.dark-mode .chat-input-area input {
+            color: #e2e8f0 !important;
+        }
+        body.dark-mode .chat-input-area input {
+            background-color: #1e293b !important;
+        }
+        
+        /* [Fix] 채팅 바디 배경색 명시적 지정 */
+        body.dark-mode #chat-body {
+            background-color: #0f172a !important; 
+        }
+
+        body.dark-mode .chat-bubble.chat-you {
+            background-color: #1e293b !important;
+            color: #e2e8f0 !important;
+            border-color: #334155 !important;
+        }
+        body.dark-mode .chat-bubble.chat-ai {
+            background-color: #064e3b !important;
+            color: #ecfdf5 !important;
+            border-color: #065f46 !important;
+        }
+        body.dark-mode .chat-time {
+            color: #64748b !important;
+        }
+        
+        /* 채팅 화면 레이아웃: 절대 좌표 고정 방식 (삭제됨 - 위 CSS로 대체) */
+        /* Flexbox 스타일은 위에서 정의함 */
+        #chat-body::-webkit-scrollbar {
+            display: none; /* 스크롤바 숨김 */
+        }
+        /* 메시지가 적을 때도 하단에 정렬되도록 첫 번째 요소에 margin-top: auto 적용 (제거 - JS spacer로 대체) */
+        /* #chat-body > :first-child { margin-top: auto; } */
+        
+        .chat-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+        .chat-row.me {
+            justify-content: flex-end;
+        }
+        .chat-row.you {
+            justify-content: flex-start;
+        }
+        .chat-time {
+            font-size: 10px;
+            color: #94A3B8;
+            margin-bottom: 2px;
+            flex-shrink: 0;
+        }
+        /* box-shadow와 border를 제거하고 배경색만 남김 */
+        .chat-bubble { 
+            max-width: 90%; 
+            width: fit-content;
+            padding: 8px 10px;  /* 여백 축소로 앞뒤 빈 공간 최소화 */
+            border-radius: 16px; 
+            font-size: 14px; 
+            line-height: 1.35; 
+            margin-bottom: 0; 
+            /* word-break: break-all; -> 단어 중간 끊김 방지를 위해 word-wrap 사용 */
+            word-wrap: break-word;
+            white-space: pre-wrap; /* 줄바꿈 문자(\n) 보존 및 자동 줄바꿈 */
+            border: none; 
+            box-shadow: none; 
+            display: inline-block; /* 내용물 크기에 맞게 줄어들도록 설정 */
+        }
+        /* CSS 선택자 우선순위 강화 및 카카오톡 스타일 적용 */
+        .chat-bubble.chat-me { 
+            background-color: #10B981 !important; 
+            color: white !important; 
+            align-self: flex-end; 
+            border-radius: 16px;
+            border-bottom-right-radius: 4px; /* 오른쪽 아래만 뾰족하게 */
+        }
+        .chat-bubble.chat-you { 
+            background-color: white !important; 
+            color: #334155 !important; 
+            align-self: flex-start; 
+            border-radius: 16px;
+            border-bottom-left-radius: 4px; /* 왼쪽 아래만 뾰족하게 */
+            border: 1px solid #E2E8F0 !important; 
+        }
+        .chat-bubble.chat-ai {
+            background-color: #ECFDF5 !important;
+            color: #065F46 !important;
+            align-self: flex-start;
+            border-radius: 16px;
+            border-bottom-left-radius: 4px; /* 왼쪽 아래만 뾰족하게 */
+            border: 1px solid #A7F3D0 !important; /* 테두리는 유지하되 둥글게 */
+        }
+        
+        /* AI 메시지가 'me' 스타일(녹색)로 덮어씌워지는 문제 방지 */
+        .chat-row.you .chat-bubble.chat-ai {
+            background-color: #ECFDF5 !important;
+            color: #065F46 !important;
+            display: inline-block; /* 추가 */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mobile-frame">
+    
+        <div class="content-area" id="main-content">
+        
+            <button id="vip-btn" onclick="goToCase()" class="case-status-btn">
+                <i class="fas fa-briefcase text-amber-400"></i><span>진행 중인 사건</span>
+                <div class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>
+            </button>
+        
+            <div id="toast-msg" class="toast"><i class="fas fa-check-circle mr-2 text-emerald-400"></i><span id="toast-text">알림</span></div>
+        
+            <div id="coupon-popup" class="modal-overlay" onclick="if(event.target === this) closePopup()">
+                <div class="modal-content">
+                    <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 text-center relative overflow-hidden">
+                        <p class="text-blue-100 text-[10px] font-bold mb-1 tracking-wider">PARTNER BENEFIT</p>
+                        <h3 class="text-white text-lg font-extrabold mb-1">이사 준비하세요?</h3>
+                        <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-xl mx-auto shadow-lg my-1">🚚</div>
+                    </div>
+                    <div class="p-4 text-center">
+                        <p class="text-slate-600 text-xs mb-3">이삿짐 센터 <span class="font-bold text-slate-800">5만원 할인</span></p>
+                        <div class="border-2 border-dashed border-slate-200 bg-slate-50 p-2 rounded-lg mb-3 cursor-pointer hover:bg-slate-100 transition" onclick="copyCoupon()">
+                            <p class="text-[10px] text-slate-400">터치하여 복사</p>
+                            <p class="text-sm font-bold text-indigo-600 tracking-widest mt-0.5">MOVE-2026</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="closePopup()" class="flex-1 py-2 rounded-lg bg-slate-100 text-slate-500 font-bold text-xs hover:bg-slate-200">닫기</button>
+                            <button onclick="saveCoupon()" class="flex-1 py-2 rounded-lg bg-indigo-600 text-white font-bold text-xs shadow-md hover:bg-indigo-700">받기</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 스캔 소스 선택 모달 -->
+            <div id="scan-source-modal" class="modal-overlay" onclick="if(event.target === this) closeScanSourceModal()">
+                <div class="modal-content">
+                    <div class="p-5 border-b border-slate-100 text-center">
+                        <p class="text-xs font-bold text-emerald-500 mb-1 tracking-[0.15em]">AI SCAN</p>
+                        <h3 class="text-sm font-extrabold text-slate-800">어디서 불러올까요?</h3>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <button onclick="chooseScanSource('camera')" class="w-full py-3 rounded-xl bg-slate-900 text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                            <i class="fas fa-camera"></i>
+                            <span>카메라로 찍기</span>
+                        </button>
+                        <button onclick="chooseScanSource('file')" class="w-full py-3 rounded-xl bg-slate-100 text-slate-700 text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                            <i class="fas fa-folder-open"></i>
+                            <span>파일에서 선택</span>
+                        </button>
+                        <button onclick="closeScanSourceModal()" class="w-full py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-slate-700 active:scale-95 transition-transform">
+                            취소
+                        </button>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 홈 -->
+            <div id="screen-home" class="screen active pt-24 px-6">
+                <div class="mt-4 mb-4">
+                    <p class="text-slate-400 text-lg font-medium">무엇이 걱정되시나요?</p>
+                    <h1 class="text-3xl font-extrabold text-slate-800 leading-tight mt-1">고민하지 말고<br>그냥 <span class="text-emerald-500">찍으세요.</span></h1>
+                </div>
+                <div class="flex-1 flex flex-col justify-start mt-6 mb-4">
+                    <div onclick="openScanSourceChooser()" class="relative bg-white rounded-[32px] p-8 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-emerald-50 text-center cursor-pointer group active:scale-95 transition-all duration-300 overflow-hidden h-[300px] flex flex-col justify-center items-center hover:border-emerald-200">
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 via-emerald-400 to-orange-400 opacity-80"></div>
+                        <div class="w-28 h-28 mx-auto rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center mb-6 shadow-xl shadow-emerald-200/50 group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-camera text-4xl text-white drop-shadow-md"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2">AI 자동 진단</h2>
+                        <p class="text-slate-500 text-sm font-medium">계약서, 통화녹음, 카톡 대화, 중고거래...<br><span class="font-bold text-emerald-600">AI가 알아서 파악합니다.</span></p>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 스캔 -->
+            <div id="screen-scan" class="screen bg-slate-900 justify-center items-center relative h-full">
+                <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80" class="absolute w-full h-full object-cover opacity-30" alt="document bg">
+                <div class="scanner-line z-10"></div>
+                <div class="z-20 text-center w-full px-8 flex flex-col items-center">
+                    <div class="spinner mb-8"></div>
+                    <h2 id="scan-title" class="text-2xl font-bold text-white mb-4 transition-all duration-500">대상 인식 중...</h2>
+                    <div class="bg-black/60 backdrop-blur-md rounded-full px-5 py-2 border border-white/10 inline-block min-w-[200px]">
+                        <p id="scan-detail" class="text-emerald-400 font-mono text-sm"><i class="fas fa-search mr-2 animate-pulse"></i><span>객체 분석 중...</span></p>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 결과 -->
+            <div id="screen-result" class="screen bg-slate-50 h-full flex flex-col">
+                <div class="bg-white px-8 pb-6 pt-10 rounded-b-[30px] shadow-sm z-10 shrink-0 text-center relative">
+                    <button onclick="goToHome()" class="absolute top-6 right-6 text-slate-300 hover:text-slate-800 p-2"><i class="fas fa-times text-xl"></i></button>
+                    <div class="inline-block bg-red-50 text-red-500 px-4 py-1.5 rounded-full text-sm font-bold mb-4 border border-red-100 animate-bounce"><i class="fas fa-exclamation-triangle mr-2"></i>위험 감지</div>
+                    <h1 class="text-2xl font-bold text-slate-800 mb-2">계약금 떼일 수 있어요</h1>
+                    <p class="text-slate-500 text-sm">특약 조항 2건이 세입자에게 불리합니다.</p>
+                </div>
+                
+                <div class="px-6 py-6 flex-1 overflow-y-auto">
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-4">
+                        <h3 class="text-slate-400 text-[10px] font-bold uppercase mb-4 tracking-widest">FACT CHECK</h3>
+                        <div class="flex gap-4 items-start mb-6 pb-4 border-b border-slate-50 last:border-0 last:mb-0 last:pb-0">
+                            <div class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0 mt-1"><i class="fas fa-times"></i></div>
+                            <div><p class="font-bold text-slate-700 mb-1">원상복구 의무 모호</p><p class="text-xs text-slate-400 leading-relaxed">"퇴거 시 원상복구" 조항은 벽지 변색 등 자연 마모까지 청구될 위험이 큽니다.</p></div>
+                        </div>
+                        <div class="flex gap-4 items-start">
+                            <div class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0 mt-1"><i class="fas fa-times"></i></div>
+                            <div><p class="font-bold text-slate-700 mb-1">특약 사항 누락</p><p class="text-xs text-slate-400 leading-relaxed">"잔금일 전 근저당권 말소" 조항이 없습니다.</p></div>
+                        </div>
+                    </div>
+                
+                    <div class="bg-emerald-50 p-6 rounded-3xl shadow-inner border border-emerald-100 mb-4">
+                        <h3 class="text-emerald-600 text-[10px] font-bold uppercase mb-4 tracking-widest"><i class="fas fa-robot mr-1"></i> AI SOLUTION</h3>
+                        
+                        <div class="bg-white rounded-xl p-4 mb-3 border border-emerald-100">
+                            <div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-slate-700">1. 특약 수정 요청하기</span><span class="bg-emerald-100 text-emerald-600 text-[10px] px-2 py-0.5 rounded font-bold">Recommended</span></div>
+                            <p class="text-xs text-slate-500 mb-3 leading-relaxed">임대인에게 보낼 정중하고 명확한 수정 요청 메시지를 AI가 작성했습니다.</p>
+                            <button onclick="selfTreat()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+                                <i class="fas fa-copy"></i> <span>요청 텍스트 복사</span>
+                            </button>
+                        </div>
+                    
+                        <div class="bg-white rounded-xl p-4 border border-emerald-100 mb-3">
+                             <div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-slate-700">2. 표준 계약서 다운로드</span></div>
+                            <p class="text-xs text-slate-500 mb-0 leading-relaxed">법무부 권장 주택임대차표준계약서 양식을 확인하세요.</p>
+                        </div>
+                    
+                         <div onclick="openContractAiChat()" class="bg-white rounded-xl p-4 border border-emerald-200 cursor-pointer hover:bg-emerald-50 transition-colors flex items-center justify-between shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white shadow-md"><i class="fas fa-comment-dots"></i></div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-700">이 계약서, AI에게 물어보기</p>
+                                    <p class="text-[10px] text-slate-400">"특약 조항이 법적으로 유효한가요?"</p>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-emerald-300"></i>
+                        </div>
+                    </div>
+                </div>
+            
+                <div class="p-5 bg-white border-t border-slate-100 shrink-0 z-20">
+                    <p class="text-center text-slate-800 font-bold mb-3 text-sm">전문가의 도움이 필요하신가요?</p>
+                    <div class="flex gap-3">
+                        <button onclick="goToRecommendation()" class="w-full py-3.5 rounded-2xl bg-slate-800 text-white font-bold shadow-lg hover:bg-slate-900 text-xs transition-transform active:scale-95 flex items-center justify-center gap-2">
+                            <span><i class="fas fa-user-shield mr-1"></i> Top 5 변호사 매칭받기</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 내 사건 -->
+            <div id="screen-case" class="screen pt-20 px-0 bg-slate-50 h-full"> 
+                <div class="px-6 mb-6"><h2 class="text-2xl font-bold text-slate-800">나의 사건 관리</h2></div>
+                
+                <div class="mx-6 bg-white p-6 rounded-3xl shadow-sm border border-emerald-100 mb-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] px-3 py-1 rounded-bl-xl font-bold">진행중</div>
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-12 h-12 rounded-full border-2 border-slate-100 p-0.5 overflow-hidden"><img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?fit=crop&w=200&h=200" class="w-full h-full object-cover"></div>
+                        <div><p class="text-xs text-slate-400 font-medium">담당 파트너</p><p class="font-bold text-slate-800">김철수 변호사</p></div>
+                        <button onclick="startChat('EXPERT', 0, 'case')" class="ml-auto bg-slate-50 text-slate-600 w-10 h-10 rounded-full flex items-center justify-center hover:bg-emerald-50 hover:text-emerald-600 transition-colors"><i class="fas fa-comment-dots"></i></button>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">2023가단 54xx 전세금 반환</h3>
+                    <div class="mt-4">
+                        <div class="flex justify-between text-[11px] font-bold text-slate-300 mb-2 tracking-tight"><span class="text-emerald-600">내용증명</span><span class="text-emerald-600">소장접수</span><span class="text-emerald-600">변론기일</span><span>판결</span></div>
+                        <div class="h-2 bg-slate-100 rounded-full overflow-hidden mb-2"><div class="h-full bg-emerald-500 rounded-full relative" style="width: 75%"><div class="absolute right-0 top-0 bottom-0 w-2 bg-white/30 animate-pulse"></div></div></div>
+                        <p class="text-right text-xs text-emerald-600 font-bold">75% 진행중</p>
+                    </div>
+                </div>
+            
+                <div class="mx-6 mb-6">
+                    <div class="flex justify-between items-end mb-2">
+                        <h3 class="font-bold text-slate-800 text-sm">전담 AI 변호사</h3>
+                        <span class="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">내 사건 학습 완료</span>
+                    </div>
+                    <div onclick="openCaseAiChat()" class="bg-slate-800 p-4 rounded-2xl shadow-lg cursor-pointer active:scale-95 transition-transform flex items-center justify-between border border-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white"><i class="fas fa-gavel"></i></div>
+                            <div><p class="text-white font-bold text-sm">사건 전담 AI와 대화하기</p><p class="text-slate-400 text-[10px]">"제 사건 진행상황과 승소율 알려줘"</p></div>
+                        </div>
+                        <i class="fas fa-chevron-right text-white/50"></i>
+                    </div>
+                </div>
+            
+                <div class="mx-6 pb-24">
+                    <h3 class="font-bold text-slate-800 text-sm mb-3">증거 서류 관리</h3>
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                        <div id="evidence-list" class="space-y-3 mb-4">
+                            <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg transition-colors">
+                                <div class="w-8 h-8 bg-red-50 text-red-500 rounded flex items-center justify-center text-xs"><i class="fas fa-file-pdf"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-bold text-slate-700 truncate">임대차계약서.pdf</p>
+                                    <p class="text-[10px] text-slate-400">2023.09.20 업로드</p>
+                                </div>
+                                <i class="fas fa-check-circle text-emerald-500 text-xs"></i>
+                            </div>
+                        </div>
+                        <button onclick="uploadEvidence()" class="w-full py-3 border border-dashed border-slate-300 rounded-xl text-slate-400 text-xs font-bold hover:bg-slate-50 hover:border-slate-400 transition-colors flex items-center justify-center gap-2">
+                            <i class="fas fa-plus"></i> 자료 추가 (사진/문서)
+                        </button>
+                        <input type="file" id="file-input" style="display: none;" onchange="handleFileSelect(this)">
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 전문가 -->
+            <div id="screen-expert" class="screen h-full">
+                <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                    <div class="mb-4 flex-shrink-0">
+                        <h2 class="text-2xl font-bold text-slate-800">분야별 전문가</h2>
+                        <p class="text-sm text-slate-500">Unfold가 보증하는 Top-Tier입니다.</p>
+                    </div>
+                    <div class="flex gap-2 overflow-x-auto hide-scrollbar mb-4 pb-2 flex-shrink-0">
+                        <button onclick="filterExperts('전체')" class="filter-btn active px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold transition whitespace-nowrap" data-cat="전체">전체</button>
+                        <button onclick="filterExperts('형사')" class="filter-btn px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold transition whitespace-nowrap" data-cat="형사">⚖️ 형사</button>
+                        <button onclick="filterExperts('이혼')" class="filter-btn px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold transition whitespace-nowrap" data-cat="이혼">💔 이혼</button>
+                        <button onclick="filterExperts('부동산')" class="filter-btn px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold transition whitespace-nowrap" data-cat="부동산">🏠 부동산</button>
+                    </div>
+                    <div id="expert-list-area" class="space-y-3 pb-24 flex-1"></div>
+                </div>
+            </div>
+        
+            <!-- 고민상담: 목록 -->
+            <div id="screen-community" class="screen h-full bg-slate-50">
+                <div class="pt-10 pb-2 px-6 bg-white sticky top-0 z-10 border-b border-slate-100 shadow-sm flex items-end justify-between" style="height: 100px;">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">고민상담</h2>
+                        <p class="text-xs text-slate-500">법률 고민, 익명으로 다수에게 물어보세요!</p>
+                    </div>
+                    <button class="text-emerald-600 font-bold text-sm"><i class="fas fa-bell"></i></button>
+                </div>
+                
+                <div id="community-feed" class="p-4 space-y-4 overflow-y-auto pb-24 flex-1"></div>
+            
+                <button onclick="openCommunityWrite()" class="write-btn">
+                    <i class="fas fa-pen text-lg"></i>
+                </button>
+            </div>
+        
+            <!-- 고민 쓰기 -->
+            <div id="screen-community-write" class="screen h-full bg-slate-50">
+                <div class="pt-6 px-6 pb-4 bg-white border-b border-slate-100 flex items-center justify-between shadow-sm">
+                    <button onclick="backToCommunityFromWrite()" class="text-slate-400 hover:text-slate-800 p-2 -ml-2">
+                        <i class="fas fa-arrow-left text-lg"></i>
+                    </button>
+                    <h2 class="text-sm font-bold text-slate-800">새 고민 올리기</h2>
+                    <span class="w-8"></span>
+                </div>
+            
+                <div class="flex-1 overflow-y-auto px-6 pt-4 pb-24">
+                    <div class="mb-4">
+                        <label class="block text-[11px] font-bold text-slate-500 mb-1.5">제목</label>
+                        <input id="community-write-title" type="text" maxlength="60" placeholder="한 줄로 고민을 요약해 주세요" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                    </div>
+                
+                    <div class="mb-4">
+                        <label class="block text-[11px] font-bold text-slate-500 mb-1.5">상세 내용</label>
+                        <textarea id="community-write-content" rows="6" placeholder="언제, 어디서, 누구와 있었던 일인지 편하게 써 주세요. 실명이나 주민번호 등 민감한 정보는 적지 마세요." class="w-full border border-slate-200 rounded-2xl px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"></textarea>
+                        <p class="mt-1 text-[10px] text-slate-400 text-right">최대 1,000자까지 입력 가능 (샘플)</p>
+                    </div>
+                
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-[11px] font-bold text-slate-500">투표 설정 (선택)</label>
+                            <span class="text-[10px] text-slate-400">입력하면 투표 막대가 함께 보여요</span>
+                        </div>
+                        <input id="community-write-vote-title" type="text" maxlength="40" placeholder="예: 도움 되었나요?" class="w-full border border-slate-200 rounded-xl px-3 py-2 mb-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                        <div class="vote-inputs">
+                            <input id="community-write-vote-left" type="text" maxlength="10" placeholder="왼쪽 선택지 (예: 보낸다)" class="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            <input id="community-write-vote-right" type="text" maxlength="10" placeholder="오른쪽 선택지 (예: 기다린다)" class="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                        </div>
+                    </div>
+                
+                    <div class="mb-6 flex items-center justify-between bg-slate-100 rounded-2xl px-3 py-2 anon-row">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs anon-avatar">익명</div>
+                            <div>
+                                <p class="text-[11px] font-bold text-slate-700 anon-title">익명으로 올리기</p>
+                                <p class="text-[10px] text-slate-400 anon-subtitle">닉네임과 프로필만 노출돼요.</p>
+                            </div>
+                        </div>
+                        <button type="button" class="inline-flex items-center cursor-pointer" onclick="toggleCommunityAnon()">
+                            <div id="community-anon-track" class="w-9 h-5 rounded-full relative transition-colors">
+                                <div id="community-anon-knob" class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"></div>
+                            </div>
+                        </button>
+                    </div>
+                
+                    <button onclick="submitCommunityWrite()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold py-3 rounded-xl shadow-md shadow-emerald-200 active:scale-95 transition-transform">
+                        고민 올리기
+                    </button>
+                </div>
+            </div>
+        
+            <!-- 고민 상세 + 댓글 -->
+            <div id="screen-community-detail" class="screen h-full bg-slate-50">
+                <div class="pt-6 px-6 pb-4 bg-white border-b border-slate-100 flex items-center justify-between shadow-sm">
+                    <button onclick="backToCommunityFromDetail()" class="text-slate-400 hover:text-slate-800 p-2 -ml-2">
+                        <i class="fas fa-arrow-left text-lg"></i>
+                    </button>
+                    <h2 class="text-sm font-bold text-slate-800">고민상담</h2>
+                    <span class="w-8"></span>
+                </div>
+            
+                <div id="community-detail-body" class="flex-1 overflow-y-auto px-6 pt-4 pb-12 space-y-4">
+                    <div id="community-detail-post" class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs">👤</div>
+                            <div>
+                                <p id="community-detail-user" class="text-xs font-bold text-slate-800">익명</p>
+                                <p id="community-detail-time" class="text-[10px] text-slate-400">방금 전</p>
+                            </div>
+                        </div>
+                        <h3 id="community-detail-title" class="font-bold text-slate-800 mb-1 text-sm"></h3>
+                        <p id="community-detail-content" class="text-xs text-slate-600 leading-relaxed mb-4 whitespace-pre-line"></p>
+                        <!-- 투표 영역 (있는 글에만 JS로 렌더링) -->
+                        <div id="community-detail-vote" class="mt-2"></div>
+                    </div>
+                
+                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="px-4 py-3 border-b border-slate-50 flex items-center justify-between gap-3">
+                            <p class="text-xs font-bold text-slate-700">댓글 <span id="community-detail-comment-count">0</span>개</p>
+                            <label class="flex items-center gap-2 text-[11px] text-slate-500 whitespace-nowrap px-3 py-2 bg-slate-100 rounded-full">
+                                <span class="font-bold text-slate-600 text-[11px]">익명</span>
+                                <button type="button" id="comment-anon-toggle" class="w-12 h-6 rounded-full bg-emerald-500 relative transition-colors duration-200" aria-label="익명 전환" onclick="toggleCommentAnon()">
+                                    <span id="comment-anon-thumb" class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200" style="transform: translateX(24px);"></span>
+                                </button>
+                            </label>
+                        </div>
+                        <div id="community-comment-bar" class="px-4 py-3 flex items-center gap-2 border-b border-slate-50 flex-wrap">
+                            <input id="community-comment-input" type="text" placeholder="댓글을 입력해 주세요" class="flex-1 min-w-[200px] bg-slate-100 rounded-full px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <button onclick="submitCommunityComment()" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full active:scale-95 transition-transform">
+                                등록
+                            </button>
+                        </div>
+                        <div id="community-comment-list" class="max-h-[320px] overflow-y-auto px-4 py-3 space-y-3"></div>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 추천 전문가 -->
+            <div id="screen-recommendation" class="screen h-full">
+                <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                    <div class="mb-6 flex justify-between items-end flex-shrink-0">
+                        <div><h2 class="text-2xl font-bold text-slate-800">AI 추천 전문가</h2><p class="text-sm text-slate-500">해당 분야 상위 <span class="text-emerald-600 font-bold">5명</span>입니다.</p></div>
+                        <button onclick="goToHome()" class="text-slate-400 text-sm hover:text-slate-800 font-bold">닫기</button>
+                    </div>
+                    <div class="space-y-3 pb-8 flex-1" id="rec-list-container"></div>
+                </div>
+            </div>
+        
+            <!-- 메뉴 / 쿠폰 / 결제 / 설정 -->
+            <div id="screen-menu" class="screen h-full">
+                <div class="pt-10 px-0 flex flex-col h-full overflow-y-auto">
+                    <div class="bg-white p-6 mb-4 shadow-sm relative">
+                        <button onclick="logout()" class="absolute top-4 right-4 text-xs font-bold text-slate-400 hover:text-slate-700">로그아웃</button>
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="relative w-16 h-16 cursor-pointer group" onclick="goToSubMenu('profile-edit')">
+                                <div class="w-full h-full rounded-full bg-slate-100 flex items-center justify-center text-3xl shadow-inner overflow-hidden">
+                                    <span id="profile-icon">😎</span>
+                                    <img id="profile-img" class="absolute inset-0 avatar-auto hidden" src="">
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h2 id="profile-name-display" class="text-xl font-bold text-slate-800">김대표님</h2>
+                                    <button onclick="goToSubMenu('profile-edit')" class="text-slate-400 hover:text-slate-800"><i class="fas fa-pen text-xs"></i></button>
+                                </div>
+                                <p class="text-xs text-slate-400 font-medium">Unfold Basic 회원</p>
+                            </div>
+                        </div>
+                        <button onclick="showToast('결제가 완료되었습니다. 프리미엄 회원으로 전환됩니다.')" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-sm py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 active:scale-95 transition-transform">멤버십 업그레이드</button>
+                    </div>
+                    <div class="bg-white p-4">
+                         <div onclick="goToSubMenu('coupons')" class="py-4 border-b border-slate-50 flex justify-between items-center text-slate-600 text-sm font-medium cursor-pointer hover:bg-slate-50 px-2 rounded"><span>🎫 내 쿠폰함</span><i class="fas fa-chevron-right text-slate-300"></i></div>
+                         <div onclick="goToSubMenu('payment')" class="py-4 border-b border-slate-50 flex justify-between items-center text-slate-600 text-sm font-medium cursor-pointer hover:bg-slate-50 px-2 rounded"><span>💳 결제 관리</span><i class="fas fa-chevron-right text-slate-300"></i></div>
+                         <div onclick="goToSubMenu('settings')" class="py-4 flex justify-between items-center text-slate-600 text-sm font-medium cursor-pointer hover:bg-slate-50 px-2 rounded"><span>⚙️ 설정</span><i class="fas fa-chevron-right text-slate-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        
+            <div id="screen-coupons" class="screen h-full">
+                <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                    <div class="mb-6 flex justify-between items-end"><h2 class="text-2xl font-bold text-slate-800">내 쿠폰함</h2><button onclick="backToMenu()" class="text-slate-400 text-sm font-bold">뒤로</button></div>
+                    <div id="coupon-list" class="space-y-3"></div>
+                </div>
+            </div>
+        
+            <div id="screen-payment" class="screen h-full">
+                <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                    <div class="mb-6 flex justify-between items-end"><h2 class="text-2xl font-bold text-slate-800">결제 관리</h2><button onclick="backToMenu()" class="text-slate-400 text-sm font-bold">뒤로</button></div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-4">
+                        <div class="flex justify-between mb-2"><span class="text-sm text-slate-500">다음 결제일</span><span class="text-sm font-bold text-slate-800">2023. 11. 25</span></div>
+                        <div class="flex justify-between items-center"><span class="text-lg font-bold text-slate-800">Unfold Premium</span><span class="text-emerald-600 font-bold">4,900원</span></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="text-xs text-slate-400 font-bold mb-3">결제 수단</h3><div class="flex items-center gap-3"><div class="w-8 h-5 bg-yellow-400 rounded"></div><span class="text-sm text-slate-700">카카오페이</span><button class="ml-auto text-xs text-slate-400 underline">변경</button></div></div>
+                </div>
+            </div>
+        
+            <div id="screen-settings" class="screen h-full">
+                 <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                     <div class="mb-6 flex justify-between items-end"><h2 class="text-2xl font-bold text-slate-800">설정</h2><button onclick="backToMenu()" class="text-slate-400 text-sm font-bold">뒤로</button></div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 border-b border-slate-50 flex justify-between items-center">
+                            <span class="text-sm text-slate-700">알림 설정</span>
+                            <button type="button" onclick="toggleNotification()" class="w-10 h-6 rounded-full relative focus:outline-none">
+                                <div id="notif-track" class="w-full h-full rounded-full toggle-track transition-colors">
+                                    <div id="notif-knob" class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow toggle-knob transition-transform"></div>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="p-4 border-b border-slate-50 flex justify-between items-center">
+                            <span class="text-sm text-slate-700">생체 인증 사용</span>
+                            <button type="button" onclick="toggleBiometric()" class="w-10 h-6 rounded-full relative focus:outline-none">
+                                <div id="biometric-track" class="w-full h-full rounded-full bg-slate-200 transition-colors">
+                                    <div id="biometric-knob" class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform"></div>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="p-4 flex justify-between items-center">
+                            <span class="text-sm text-slate-700">다크 모드</span>
+                            <button type="button" onclick="toggleDarkMode()" class="w-10 h-6 rounded-full relative focus:outline-none" >
+                                <div id="dark-mode-track" class="w-full h-full rounded-full bg-slate-200 transition-colors">
+                                    <div id="dark-mode-knob" class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform"></div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 프로필 수정 화면 -->
+            <div id="screen-profile-edit" class="screen h-full">
+                <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                    <div class="mb-6 flex justify-between items-end">
+                        <h2 class="text-2xl font-bold text-slate-800">프로필 수정</h2>
+                        <button onclick="backToMenu()" class="text-slate-400 text-sm font-bold">취소</button>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center mb-6">
+                        <div class="relative w-24 h-24 mb-4">
+                            <div class="w-full h-full rounded-full bg-slate-100 flex items-center justify-center text-4xl shadow-inner overflow-hidden">
+                                <span id="edit-profile-icon">😎</span>
+                                <img id="edit-profile-img" class="absolute inset-0 avatar-auto hidden" src="">
+                            </div>
+                            
+                            <!-- 이모지 랜덤 변경 버튼 (오른쪽 하단) -->
+                            <button class="absolute -bottom-1 -right-1 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center border-2 border-white shadow-md active:scale-95 transition-transform z-10" onclick="changeProfileEmoji()">
+                                <i class="fas fa-dice text-white text-xs"></i>
+                            </button>
+                            <!-- 사진 업로드 버튼 (왼쪽 하단) -->
+                            <button class="absolute -bottom-1 -left-1 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center border-2 border-white shadow-md active:scale-95 transition-transform z-10" onclick="uploadProfileImage()">
+                                <i class="fas fa-camera text-white text-xs"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-400 font-bold mb-1">프로필 사진 변경</p>
+                        <input type="file" id="profile-upload-input" accept="image/*" class="hidden" onchange="handleProfileImageChange(this)">
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1.5">이름 (닉네임)</label>
+                            <input id="edit-profile-name" type="text" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white" placeholder="이름을 입력하세요">
+                        </div>
+                        
+                        <button onclick="saveProfile()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-200 active:scale-95 transition-transform mt-4">
+                            저장하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 채팅 -->
+            <div id="screen-chat" class="screen h-full bg-white block">
+                <!-- py-3 제거: CSS에서 padding 제어 -->
+                <header class="chat-header">
+                    <button onclick="backToPrevFromChat()" class="text-slate-400 hover:text-slate-800 p-2"><i class="fas fa-arrow-left text-lg"></i></button>
+                    <div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border border-slate-100 flex items-center justify-center">
+                        <img id="chat-profile-img" src="" class="w-full h-full object-cover">
+                        <i id="chat-profile-icon" class="fas fa-robot text-white hidden"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="font-bold text-slate-800 text-sm" id="chat-name">변호사 이름</h3>
+                        <div class="flex items-center gap-1.5"><div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div><span class="text-[10px] text-slate-400 font-medium">상담 가능</span></div>
+                    </div>
+                </header>
+            
+                <main id="chat-body"></main>
+            
+                <!-- p-3 제거 및 CSS 제어로 변경 -->
+                <footer class="chat-input-area bg-white border-t border-slate-100 flex gap-2 items-center shadow-[0_-5px_20px_rgba(0,0,0,0.02)]">
+                    <button class="text-slate-400 p-2 hover:text-emerald-500 transition-colors"><i class="fas fa-plus"></i></button>
+                    <input id="chat-input" type="text" placeholder="메시지를 입력하세요..." class="flex-1 bg-slate-100 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button onclick="sendMessage()" class="bg-emerald-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:bg-emerald-600 transition-colors active:scale-95 flex-shrink-0"><i class="fas fa-paper-plane text-sm"></i></button>
+                </footer>
+            </div>
+        
+        </div>
+    
+        <div class="top-nav">
+            <button onclick="switchTab('home')" class="nav-item active" id="nav-home">
+                <i class="fas fa-home"></i><span>홈</span>
+            </button>
+            <button onclick="switchTab('case')" class="nav-item" id="nav-case">
+                <i class="fas fa-folder-open"></i><span>내 사건</span>
+            </button>
+            <button onclick="switchTab('expert')" class="nav-item" id="nav-expert">
+                <i class="fas fa-user-tie"></i><span>전문가</span>
+            </button>
+            <button onclick="switchTab('community')" class="nav-item" id="nav-community">
+                <i class="fas fa-comments"></i><span>고민상담</span>
+            </button>
+            <button onclick="switchTab('menu')" class="nav-item" id="nav-menu">
+                <i class="fas fa-bars"></i><span>메뉴</span>
+            </button>
+        </div>
+    
+    </div>
+
+<script>
+    let previousScreen = 'expert';
+    let currentChatId = null;
+    let currentAiType = null;
+    const chatHistoryStore = {}; 
+    const savedCoupons = []; 
+    let isDarkMode = false;
+    
+    // [History] 탭 이동 히스토리 관리
+    const tabHistory = [];
+    let isBackNav = false;
+
+    // 백엔드(Express + MongoDB) API 서버 주소
+    const API_BASE_URL = 'https://app.unfoldlab-legalpro.com'; // TODO: 실제 배포 주소로 맞춰주세요
+
+    // MongoDB에서 불러온 전문가 데이터 (임시 하드코딩 제거)
+    let expertsData = [];
+
+    const communityPosts = [
+        {
+            user: "익명123", time: "10분 전", title: "전세 보증금 안 돌려주는데 이거 신고 가능한가요?",
+            content: "계약 만료 3개월 전부터 말했는데 집주인이 연락을 피해요... 내용증명 보내면 해결되나요?",
+            voteTitle: "내용증명 보낼까요?", leftLabel: "보낸다", leftPct: 80, rightLabel: "기다린다", rightPct: 20,
+            likes: 12,
+            leftVotes: 80,
+            rightVotes: 20,
+            commentList: [
+                { user: "법률도우미", time: "5분 전", text: "내용증명부터 보내 보시는 게 좋습니다. 그래도 안 되면 지급명령이나 소송도 고려해 보세요." },
+                { user: "익명456", time: "방금 전", text: "저도 비슷한 상황인데 내용증명 후에 바로 연락 오더라고요." }
+            ]
+        },
+        {
+            user: "고민많은직장인", time: "1시간 전", title: "중고거래 사기 당한 것 같습니다 ㅠㅠ",
+            content: "입금했는데 물건도 안 보내고 잠수 탔어요. 소액인데 경찰서 가면 받아주나요?",
+            voteTitle: "신고 가능?", leftLabel: "가능", leftPct: 95, rightLabel: "힘듦", rightPct: 5,
+            likes: 45,
+            leftVotes: 95,
+            rightVotes: 5,
+            commentList: [
+                { user: "형사전문", time: "45분 전", text: "금액과 상관 없이 사기는 범죄라서, 캡처 정리해서 사이버수사대에 신고해 보세요." }
+            ]
+        },
+        {
+            user: "법알못", time: "3시간 전", title: "층간소음 때문에 윗집이랑 싸웠는데 고소 당할까요?",
+            content: "너무 시끄러워서 올라가서 문 좀 세게 두드렸는데, 주거침입으로 신고한다고 하네요...",
+            voteTitle: "누가 잘못?", leftLabel: "윗집", leftPct: 60, rightLabel: "글쓴이", rightPct: 40,
+            likes: 8,
+            commentList: []
+        }
+    ];
+
+    let currentCommunityPostIndex = null;
+    let communityAnonEnabled = true;
+    let commentAnonEnabled = true;
+    let notificationEnabled = true;
+
+    function getCurrentTimeStr() {
+        const now = new Date();
+        let hours = now.getHours();
+        const minutes = now.getMinutes();
+        const ampm = hours >= 12 ? '오후' : '오전';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // 0시는 12시로 표시
+        const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+        return ampm + ' ' + hours + ':' + minutesStr;
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast-msg');
+        document.getElementById('toast-text').innerText = msg;
+        toast.style.display = 'block';
+        toast.style.animation = 'none';
+        toast.offsetHeight; 
+        toast.style.animation = null; 
+        setTimeout(() => { toast.style.display = 'none'; }, 2000);
+    }
+
+    function toggleVipBtn(show) {
+        const btn = document.getElementById('vip-btn');
+        if (show) btn.classList.remove('hidden-btn');
+        else btn.classList.add('hidden-btn');
+    }
+
+    function switchTab(tabName) {
+        // 현재 활성화된 탭 파악 (히스토리 저장용)
+        if (!isBackNav) {
+            const currentTabBtn = document.querySelector('.nav-item.active');
+            if (currentTabBtn) {
+                const currentTabName = currentTabBtn.id.replace('nav-', '');
+                // 같은 탭을 또 누른 게 아니고, 유효한 탭이라면 스택에 저장
+                if (currentTabName && currentTabName !== tabName) {
+                    tabHistory.push(currentTabName);
+                    // 스택이 너무 커지지 않게 제한 (선택사항, 여기선 20개)
+                    if(tabHistory.length > 20) tabHistory.shift();
+                }
+            }
+        }
+
+        document.querySelectorAll('.nav-item').forEach(n => {
+            n.classList.remove('active', 'text-emerald-600', 'font-bold');
+            n.classList.add('text-slate-400');
+        });
+        
+        const activeNav = document.getElementById('nav-' + tabName);
+        if(activeNav) {
+            activeNav.classList.add('active', 'text-emerald-600', 'font-bold');
+            activeNav.classList.remove('text-slate-400');
+        }
+
+        document.querySelectorAll('.screen').forEach(s => {
+            s.style.display = 'none';
+            s.classList.remove('fade-in');
+            s.classList.remove('active');
+        });
+        
+        const targetScreen = document.getElementById('screen-' + tabName);
+        if(targetScreen) {
+            targetScreen.style.display = 'flex'; 
+            targetScreen.classList.add('fade-in');
+            targetScreen.classList.add('active');
+        }
+
+        if (tabName === 'home') toggleVipBtn(true);
+        else toggleVipBtn(false);
+
+        if (tabName === 'expert') filterExperts('전체');
+        if (tabName === 'community') renderCommunity();
+        
+        // 이동 완료 후 플래그 초기화
+        isBackNav = false;
+    }
+
+    function goToSubMenu(page) {
+        document.querySelectorAll('.screen').forEach(s => {
+            s.style.display = 'none';
+            s.classList.remove('active');
+        });
+        const target = document.getElementById('screen-' + page);
+        target.style.display = 'flex';
+        target.classList.add('fade-in');
+        target.classList.add('active');
+        toggleVipBtn(false);
+        if(page === 'coupons') renderCoupons();
+    }
+
+    function backToMenu() { switchTab('menu'); }
+
+    function renderCommunity() {
+        const feed = document.getElementById('community-feed');
+        feed.innerHTML = '';
+        communityPosts.forEach((post, index) => {
+            if (!post.commentList) post.commentList = [];
+            post.comments = post.commentList.length;
+
+            // 투표 정보가 있는 글(기존 샘플)과, 없는 글(사용자가 새로 쓴 글)을 구분
+            const hasVote = post.voteTitle && post.leftLabel && post.rightLabel;
+
+            // 투표 비율 계산 (표 수 기준)
+            let voteBlock = '';
+            if (hasVote) {
+                let leftVotes = typeof post.leftVotes === 'number' ? post.leftVotes : 0;
+                let rightVotes = typeof post.rightVotes === 'number' ? post.rightVotes : 0;
+
+                const total = leftVotes + rightVotes;
+                let leftPct = 0;
+                let rightPct = 0;
+
+                if (total > 0) {
+                    leftPct = Math.round((leftVotes / total) * 100);
+                    rightPct = 100 - leftPct;
+                }
+
+                // 상태를 다시 저장해서 상세 화면과 동기화
+                post.leftVotes = leftVotes;
+                post.rightVotes = rightVotes;
+                post.leftPct = leftPct;
+                post.rightPct = rightPct;
+
+                voteBlock = `
+                <div class="bg-slate-50 p-3 rounded-xl mb-3">
+                    <p class="text-[10px] text-slate-500 font-bold mb-2 text-center">🗳️ ${post.voteTitle}</p>
+                    <div class="flex items-center gap-2 text-[10px] font-bold text-slate-600 mb-1">
+                        <span>${post.leftLabel}</span>
+                        <span class="ml-auto">${post.rightLabel}</span>
+                    </div>
+                    <div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden flex">
+                        <div class="h-full bg-emerald-400 vote-bar" style="width: ${leftPct}%"></div>
+                        <div class="h-full bg-red-400 vote-bar" style="width: ${rightPct}%"></div>
+                    </div>
+                    <div class="flex justify-between text-[9px] text-slate-400 mt-1">
+                        <span>${leftPct}%</span>
+                        <span>${rightPct}%</span>
+                    </div>
+                </div>`;
+            }
+
+            feed.innerHTML += `
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs">👤</div>
+                    <div><p class="text-xs font-bold text-slate-800">${post.user}</p><p class="text-[10px] text-slate-400">${post.time}</p></div>
+                </div>
+                <h3 class="font-bold text-slate-800 mb-1">${post.title}</h3>
+                <p class="text-xs text-slate-600 leading-relaxed mb-4">${post.content}</p>
+                
+                ${voteBlock}
+
+                <div class="flex gap-4 text-xs text-slate-400 border-t border-slate-50 pt-3">
+                    <button class="flex items-center gap-1 hover:text-red-500" onclick="toggleLike(${index})">
+                        <i class="${post.isLiked ? 'fas fa-heart text-red-500' : 'far fa-heart text-slate-400'}" id="like-icon-${index}"></i> 
+                        <span id="like-count-${index}" class="${post.isLiked ? 'text-red-500' : 'text-slate-400'}">${post.likes}</span>
+                    </button>
+                    <button class="flex items-center gap-1 hover:text-blue-500" onclick="openCommunityDetail(${index})">
+                        <i class="far fa-comment"></i> 
+                        <span id="comment-count-${index}">${post.comments}</span>
+                    </button>
+                    <button class="ml-auto" onclick="shareCommunityPost(${index})">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                </div>
+            </div>`;
+        });
+    }
+
+    function toggleLike(index) {
+        const post = communityPosts[index];
+        const likeIcon = document.getElementById(`like-icon-${index}`);
+        const likeCount = document.getElementById(`like-count-${index}`);
+
+        if (!post.isLiked) {
+            post.isLiked = true;
+            likeIcon.className = 'fas fa-heart text-red-500';
+            likeCount.className = 'text-red-500';
+            post.likes++;
+        } else {
+            post.isLiked = false;
+            likeIcon.className = 'far fa-heart text-slate-400';
+            likeCount.className = 'text-slate-400';
+            post.likes--;
+        }
+        likeCount.innerText = post.likes;
+    }
+
+    // 고민 공유
+    async function shareCommunityPost(index) {
+        const post = communityPosts[index];
+        if (!post) return;
+
+        const shareText = `[고민 공유]\n${post.title}\n\n${post.content}`;
+
+        try {
+            // Web Share API가 있으면 기본 공유 시트 사용
+            if (navigator.share) {
+                await navigator.share({
+                    title: post.title,
+                    text: shareText
+                });
+            } else {
+                // 없으면 텍스트만 클립보드로 복사
+                await navigator.clipboard.writeText(shareText);
+                showToast('고민 내용이 복사되었습니다. 원하는 곳에 붙여넣기 하세요.');
+            }
+        } catch (err) {
+            console.error('공유 중 오류:', err);
+            showToast('공유 중 오류가 발생했습니다.');
+        }
+    }
+
+    function updateCommunityAnonUI() {
+        const track = document.getElementById('community-anon-track');
+        const knob = document.getElementById('community-anon-knob');
+        if (!track || !knob) return;
+
+        if (communityAnonEnabled) {
+            track.style.backgroundColor = '#10B981';
+            knob.style.transform = 'translateX(16px)';
+        } else {
+            track.style.backgroundColor = '#CBD5E1';
+            knob.style.transform = 'translateX(0px)';
+        }
+    }
+
+    function toggleCommunityAnon() {
+        communityAnonEnabled = !communityAnonEnabled;
+        updateCommunityAnonUI();
+    }
+
+    function openCommunityWrite() {
+        document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+        const writeScreen = document.getElementById('screen-community-write');
+        writeScreen.style.display = 'flex';
+        writeScreen.classList.add('fade-in');
+        toggleVipBtn(false);
+    }
+
+    function backToCommunityFromWrite() {
+        document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+        const communityScreen = document.getElementById('screen-community');
+        communityScreen.style.display = 'flex';
+        communityScreen.classList.add('fade-in');
+        toggleVipBtn(false);
+        renderCommunity();
+    }
+
+    function submitCommunityWrite() {
+        const title = document.getElementById('community-write-title')?.value.trim();
+        const content = document.getElementById('community-write-content')?.value.trim();
+        const voteTitle = document.getElementById('community-write-vote-title')?.value.trim();
+        const voteLeft = document.getElementById('community-write-vote-left')?.value.trim();
+        const voteRight = document.getElementById('community-write-vote-right')?.value.trim();
+
+        if (!title || !content) {
+            showToast('제목과 내용을 모두 입력해주세요.');
+            return;
+        }
+
+        const newPost = {
+            user: communityAnonEnabled ? '익명' : '로그인 유저',
+            time: '방금 전',
+            title,
+            content,
+            likes: 0,
+            commentList: []
+        };
+
+        // 투표 질문/선택지를 모두 입력한 경우에만 투표 블록 생성
+        if (voteTitle && voteLeft && voteRight) {
+            newPost.voteTitle = voteTitle;
+            newPost.leftLabel = voteLeft;
+            newPost.rightLabel = voteRight;
+            // 초기 상태는 0 : 0 표에서 시작
+            newPost.leftVotes = 0;
+            newPost.rightVotes = 0;
+            newPost.leftPct = 0;
+            newPost.rightPct = 0;
+        }
+
+        communityPosts.unshift(newPost);
+
+        document.getElementById('community-write-title').value = '';
+        document.getElementById('community-write-content').value = '';
+        if (document.getElementById('community-write-vote-title')) {
+            document.getElementById('community-write-vote-title').value = '';
+            document.getElementById('community-write-vote-left').value = '';
+            document.getElementById('community-write-vote-right').value = '';
+        }
+        backToCommunityFromWrite();
+        showToast('고민이 등록되었습니다.');
+    }
+
+    function openCommunityDetail(index) {
+        currentCommunityPostIndex = index;
+        const post = communityPosts[index];
+        if (!post.commentList) post.commentList = [];
+
+        document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+        const detailScreen = document.getElementById('screen-community-detail');
+        detailScreen.style.display = 'flex';
+        detailScreen.classList.add('fade-in');
+        toggleVipBtn(false);
+
+        document.getElementById('community-detail-user').innerText = post.user;
+        document.getElementById('community-detail-time').innerText = post.time;
+        document.getElementById('community-detail-title').innerText = post.title;
+        document.getElementById('community-detail-content').innerText = post.content;
+
+        renderCommunityComments();
+        renderCommunityDetailVote();
+    }
+
+    function renderCommunityComments() {
+        if (currentCommunityPostIndex === null) return;
+        const post = communityPosts[currentCommunityPostIndex];
+        if (!post.commentList) post.commentList = [];
+
+        const listEl = document.getElementById('community-comment-list');
+        const countEl = document.getElementById('community-detail-comment-count');
+        if (!listEl || !countEl) return;
+
+        listEl.innerHTML = '';
+        post.commentList.forEach(c => {
+            listEl.innerHTML += `
+                <div class="flex items-start gap-2">
+                    <div class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[11px]">익명</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <p class="text-[11px] font-bold text-slate-700">${c.user}</p>
+                            <span class="text-[10px] text-slate-400 flex-shrink-0">${c.time}</span>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap break-words">${c.text}</p>
+                    </div>
+                </div>
+            `;
+        });
+
+        post.comments = post.commentList.length;
+        countEl.innerText = post.comments;
+
+        const countSpan = document.getElementById(`comment-count-${currentCommunityPostIndex}`);
+        if (countSpan) countSpan.innerText = post.comments;
+    }
+
+    // 고민 상세에서 투표 영역 렌더링
+    function renderCommunityDetailVote() {
+        const container = document.getElementById('community-detail-vote');
+        if (!container || currentCommunityPostIndex === null) return;
+
+        const post = communityPosts[currentCommunityPostIndex];
+
+        // 투표 정보가 없는 글이면 영역 비우기
+        if (!post.voteTitle || !post.leftLabel || !post.rightLabel) {
+            container.innerHTML = '';
+            return;
+        }
+
+        // 초기 투표 카운트 세팅 (없다면 pct 기준으로 세팅)
+        if (typeof post.leftVotes !== 'number' || typeof post.rightVotes !== 'number') {
+            if (typeof post.leftPct === 'number' && typeof post.rightPct === 'number') {
+                post.leftVotes = post.leftPct;
+                post.rightVotes = post.rightPct;
+            } else {
+                post.leftVotes = 0;
+                post.rightVotes = 0;
+            }
+        }
+
+        const total = post.leftVotes + post.rightVotes;
+        if (total > 0) {
+            post.leftPct = Math.round((post.leftVotes / total) * 100);
+            post.rightPct = 100 - post.leftPct;
+        } else {
+            // 초기 상태: 0 : 0
+            post.leftPct = 0;
+            post.rightPct = 0;
+        }
+
+        const alreadyVoted = post.userVotedSide === 'left' || post.userVotedSide === 'right';
+
+        const leftBtnAttrs = alreadyVoted
+            ? 'class="px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-400 cursor-default opacity-60 text-left"'
+            : 'class="px-2 py-1 rounded-full bg-white border border-slate-200 hover:border-emerald-400 hover:text-emerald-600 active:scale-95 transition text-left" onclick="voteCurrentPost(\'left\')"';
+
+        const rightBtnAttrs = alreadyVoted
+            ? 'class="ml-auto px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-400 cursor-default opacity-60 text-right"'
+            : 'class="ml-auto px-2 py-1 rounded-full bg-white border border-slate-200 hover:border-emerald-400 hover:text-emerald-600 active:scale-95 transition text-right" onclick="voteCurrentPost(\'right\')"';
+
+        container.innerHTML = `
+            <div class="bg-slate-50 p-3 rounded-xl mt-1">
+                <p class="text-[10px] text-slate-500 font-bold mb-2 text-center">🗳️ ${post.voteTitle}</p>
+                <div class="flex items-center gap-2 text-[10px] font-bold text-slate-600 mb-1">
+                    <button ${leftBtnAttrs}>
+                        ${post.leftLabel}
+                    </button>
+                    <button ${rightBtnAttrs}>
+                        ${post.rightLabel}
+                    </button>
+                </div>
+                <div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden flex mt-1">
+                    <div class="h-full bg-emerald-400 vote-bar" style="width: ${post.leftPct}%"></div>
+                    <div class="h-full bg-red-400 vote-bar" style="width: ${post.rightPct}%"></div>
+                </div>
+                <div class="flex justify-between text-[9px] text-slate-400 mt-1">
+                    <span>${post.leftPct}%</span>
+                    <span>${post.rightPct}%</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function voteCurrentPost(side) {
+        if (currentCommunityPostIndex === null) return;
+        const post = communityPosts[currentCommunityPostIndex];
+        if (!post.voteTitle || !post.leftLabel || !post.rightLabel) {
+            showToast('이 글은 투표 항목이 없습니다.');
+            return;
+        }
+
+        // 이미 한 번 투표한 경우 다시 투표 불가
+        if (post.userVotedSide === 'left' || post.userVotedSide === 'right') {
+            showToast('이미 투표하셨습니다.');
+            return;
+        }
+
+        if (typeof post.leftVotes !== 'number' || typeof post.rightVotes !== 'number') {
+            if (typeof post.leftPct === 'number' && typeof post.rightPct === 'number') {
+                post.leftVotes = post.leftPct;
+                post.rightVotes = post.rightPct;
+            } else {
+                post.leftVotes = 0;
+                post.rightVotes = 0;
+            }
+        }
+
+        if (side === 'left') post.leftVotes += 1;
+        else if (side === 'right') post.rightVotes += 1;
+
+        // 사용자가 어디에 투표했는지 기록 (세션 기준 1회 제한)
+        post.userVotedSide = side;
+
+        renderCommunityDetailVote();
+        renderCommunity(); // 목록의 퍼센트도 함께 갱신
+        showToast('투표가 반영되었습니다.');
+    }
+
+    function backToCommunityFromDetail() {
+        document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+        const communityScreen = document.getElementById('screen-community');
+        communityScreen.style.display = 'flex';
+        communityScreen.classList.add('fade-in');
+        toggleVipBtn(false);
+        renderCommunity();
+    }
+
+    function submitCommunityComment() {
+        if (currentCommunityPostIndex === null) return;
+        const input = document.getElementById('community-comment-input');
+        if (!input) return;
+        const text = input.value.trim();
+        if (!text) return;
+
+        const post = communityPosts[currentCommunityPostIndex];
+        if (!post.commentList) post.commentList = [];
+        post.commentList.push({
+            user: commentAnonEnabled ? "익명" : "나",
+            time: "방금 전",
+            text
+        });
+
+        input.value = '';
+        renderCommunityComments();
+    }
+
+    function syncCommentAnonUI() {
+        const toggle = document.getElementById('comment-anon-toggle');
+        const thumb = document.getElementById('comment-anon-thumb');
+        if (!toggle || !thumb) return;
+        if (commentAnonEnabled) {
+            toggle.classList.add('on');
+            thumb.style.transform = 'translateX(24px)';
+        } else {
+            toggle.classList.remove('on');
+            thumb.style.transform = 'translateX(0px)';
+        }
+    }
+
+    function toggleCommentAnon() {
+        commentAnonEnabled = !commentAnonEnabled;
+        syncCommentAnonUI();
+    }
+
+    document.addEventListener('DOMContentLoaded', syncCommentAnonUI);
+
+    // 알림 설정 토글
+    function syncNotificationUI() {
+        const track = document.getElementById('notif-track');
+        const knob = document.getElementById('notif-knob');
+        if (!track || !knob) return;
+        if (notificationEnabled) {
+            track.classList.add('on');
+            knob.style.transform = 'translateX(16px)';
+        } else {
+            track.classList.remove('on');
+            knob.style.transform = 'translateX(0px)';
+        }
+    }
+
+    function toggleNotification() {
+        notificationEnabled = !notificationEnabled;
+        syncNotificationUI();
+        showToast(notificationEnabled ? '알림이 켜졌습니다.' : '알림이 꺼졌습니다.');
+    }
+
+    document.addEventListener('DOMContentLoaded', syncNotificationUI);
+
+    function renderCoupons() {
+        const list = document.getElementById('coupon-list');
+        list.innerHTML = '';
+        if(savedCoupons.length === 0) {
+            list.innerHTML = `<div class="text-center text-slate-400 mt-10 text-sm">저장된 쿠폰이 없습니다.</div>`;
+            return;
+        }
+        savedCoupons.forEach(c => {
+            list.innerHTML += `
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+                <div><h3 class="font-bold text-slate-800">${c.title}</h3><p class="text-xs text-slate-500">${c.desc}</p></div>
+                <div class="text-right"><span class="block text-indigo-600 font-bold text-lg">${c.code}</span><span class="text-[10px] text-slate-400">2024.12.31 만료</span></div>
+            </div>`;
+        });
+    }
+
+    function goToHome() { switchTab('home'); }
+    function goToCase() { switchTab('case'); }
+
+    function goToRecommendation() {
+        document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+        const target = document.getElementById('screen-recommendation');
+        target.style.display = 'flex';
+        target.classList.add('fade-in');
+        toggleVipBtn(false);
+        showToast("AI가 최적의 전문가를 매칭했습니다.");
+
+        const container = document.getElementById('rec-list-container');
+        container.innerHTML = '';
+        const recExperts = expertsData.slice(0, 5);
+        recExperts.forEach((l, index) => {
+            container.innerHTML += `
+            <div class="bg-white p-4 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-slate-100 flex gap-4 items-center">
+                <div class="w-12 h-12 rounded-full bg-slate-100 overflow-hidden"><img src="${l.img}" class="w-full h-full object-cover"></div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-slate-800 text-sm">${l.name} 변호사 <i class="fas fa-check-circle text-blue-500 text-[10px]"></i></h3>
+                    <p class="text-[11px] text-slate-500 mt-0.5">${l.category} • ${l.tag}</p>
+                </div>
+                <button onclick="startChat('EXPERT', ${index}, 'recommendation')" class="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-500 hover:text-white transition-colors">선택</button>
+            </div>`;
+        });
+    }
+
+    function openCaseAiChat() { startChat('CASE_AI', null, 'case'); }
+    function openContractAiChat() { startChat('CONTRACT_AI', null, 'result'); }
+
+    function startChat(type, identifier, from) {
+        currentAiType = type;
+        previousScreen = from;
+        let chatName, imgUrl, isAi, bgColorClass, uniqueId;
+
+        if (type === 'EXPERT') {
+            const expert = expertsData[identifier];
+            chatName = expert.name + ' 변호사';
+            imgUrl = expert.img;
+            isAi = false;
+            uniqueId = 'EXPERT_' + identifier; 
+        } else if (type === 'CASE_AI') {
+            chatName = '사건 전담 AI 변호사';
+            isAi = true;
+            bgColorClass = 'bg-emerald-500';
+            uniqueId = 'CASE_AI';
+        } else if (type === 'CONTRACT_AI') {
+            chatName = '법률 도우미 AI';
+            isAi = true;
+            bgColorClass = 'bg-indigo-500';
+            uniqueId = 'CONTRACT_AI';
+        }
+
+        currentChatId = uniqueId;
+
+        // [중요] 채팅 화면을 Body의 바로 아래 자식으로 이동
+        const chatScreen = document.getElementById('screen-chat');
+        if (chatScreen.parentElement !== document.body) {
+            document.body.appendChild(chatScreen);
+        }
+
+        // 하단 탭바 숨기기 (채팅방은 전체화면)
+        const nav = document.querySelector('.top-nav');
+        if (nav) nav.style.display = 'none';
+
+        document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+        
+        // [Fix] 인라인 스타일로 display: flex 강제 지정하여 우선순위 문제 해결
+        chatScreen.style.display = 'flex'; 
+        chatScreen.classList.add('active');
+        
+        toggleVipBtn(false);
+        
+        document.getElementById('chat-name').innerText = chatName;
+        const img = document.getElementById('chat-profile-img');
+        const icon = document.getElementById('chat-profile-icon');
+        const imgContainer = img.parentElement;
+
+        if (isAi) {
+            img.style.display = 'none';
+            icon.classList.remove('hidden');
+            imgContainer.className = `w-10 h-10 rounded-full flex items-center justify-center text-white ${bgColorClass}`;
+        } else {
+            img.style.display = 'block';
+            img.src = imgUrl;
+            icon.classList.add('hidden');
+            imgContainer.className = "w-10 h-10 rounded-full bg-slate-200 overflow-hidden border border-slate-100 flex items-center justify-center";
+        }
+
+        const chatBody = document.getElementById('chat-body');
+        chatBody.innerHTML = '';
+
+        if (!chatHistoryStore[currentChatId]) {
+            let initialMsg = "";
+            if(type === 'CASE_AI') initialMsg = "안녕하세요. 김대표님의 '전세금 반환 소송(2023가단54xx)'을 전담하고 있는 AI 변호사입니다.\n현재 사건 진행률은 75%이며, 상대방 답변서에 대한 반박 준비서면을 작성 중입니다. 궁금한 점이 있으신가요?";
+            else if(type === 'CONTRACT_AI') initialMsg = "방금 진단하신 부동산 임대차 계약서에 대해 궁금한 점이 있으신가요?\n'원상복구 조항'의 위험성과 '특약 누락'에 대해 법률적인 조언을 드릴 수 있습니다.";
+            else initialMsg = "안녕하세요! Unfold 분석 결과 보고 연락드립니다. 무엇을 도와드릴까요?";
+
+            const firstTime = getCurrentTimeStr();
+            chatHistoryStore[currentChatId] = [
+                { type: 'date', text: '오늘' },
+                { type: isAi ? 'ai' : 'you', text: initialMsg, time: firstTime }
+            ];
+        }
+        renderChat();
+    }
+
+    function renderChat() {
+        const chatBody = document.getElementById('chat-body');
+        chatBody.innerHTML = '<div class="flex-1 min-h-0"></div>'; // 상단 여백 (메시지 하단 정렬용)
+        
+        chatHistoryStore[currentChatId].forEach(msg => {
+            if (msg.type !== 'date' && !msg.time) {
+                msg.time = getCurrentTimeStr(); // 기존 데이터에 시간이 없을 때 1회만 세팅
+            }
+            if(msg.type === 'date') {
+                chatBody.innerHTML += `<div class="text-center text-[10px] text-slate-400 my-4 bg-slate-100 inline-block mx-auto px-3 py-1 rounded-full">${msg.text}</div>`;
+            } else if(msg.type === 'me') {
+                const timeStr = msg.time;
+                chatBody.innerHTML += `
+                <div class="chat-row me">
+                    <span class="chat-time">${timeStr}</span>
+                    <div class="chat-bubble chat-me">${msg.text}</div>
+                </div>`;
+            } else {
+                const bubbleClass = msg.type === 'ai' ? 'chat-ai' : 'chat-you';
+                const rowClass = msg.type === 'ai' ? 'you' : 'you'; // AI도 왼쪽 정렬(you) 사용
+                const iconHtml = msg.type === 'ai' ? '<i class="fas fa-robot mr-1 text-emerald-600 text-xs"></i>' : '';
+                const timeStr = msg.time;
+                
+                chatBody.innerHTML += `
+                <div class="chat-row ${rowClass}">
+                    <div class="chat-bubble ${bubbleClass}">
+                        ${iconHtml}${msg.text}
+                    </div>
+                    <span class="chat-time">${timeStr}</span>
+                </div>`;
+            }
+        });
+        setTimeout(() => { chatBody.scrollTop = chatBody.scrollHeight; }, 50);
+    }
+
+    function backToPrevFromChat() {
+        // 하단 탭바 복구
+        const nav = document.querySelector('.top-nav');
+        if (nav) nav.style.display = 'flex';
+
+        const chatScreen = document.getElementById('screen-chat');
+        chatScreen.classList.remove('active');
+        chatScreen.style.display = 'none'; // 확실하게 숨김 처리
+
+        if (previousScreen === 'recommendation') goToRecommendation();
+        else if (previousScreen === 'case') switchTab('case');
+        else if (previousScreen === 'result') { 
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            document.getElementById('screen-result').style.display = 'flex';
+        }
+        else switchTab('expert');
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const chatBody = document.getElementById('chat-body');
+        
+        // 현재 시간 (실제 데이터)
+        const timeStr = getCurrentTimeStr();
+
+        chatBody.innerHTML += `
+        <div class="chat-row me">
+            <span class="chat-time">${timeStr}</span>
+            <div class="chat-bubble chat-me">${text}</div>
+        </div>`;
+        
+        if(!chatHistoryStore[currentChatId]) chatHistoryStore[currentChatId] = [];
+        chatHistoryStore[currentChatId].push({ type: 'me', text: text, time: timeStr });
+        
+        input.value = '';
+        input.focus();
+        chatBody.scrollTop = chatBody.scrollHeight;
+
+        setTimeout(() => {
+            let reply = "";
+            let type = "you"; 
+            
+            if (currentAiType === 'CASE_AI') {
+                type = 'ai';
+                reply = "네, 고객님의 사건 데이터(2023가단54xx)를 분석한 결과, 해당 증거는 승소에 매우 유리합니다. 상대방이 주장하는 '원상복구 특약'은 효력이 없음을 입증할 수 있습니다.";
+            } else if (currentAiType === 'CONTRACT_AI') {
+                type = 'ai';
+                reply = "문의하신 '원상복구 조항'은 주택임대차보호법에 위배될 소지가 있습니다. 제가 표준계약서 제5조를 인용하여 수정 문구를 만들어 드릴까요?";
+            } else {
+                reply = "네, 보내주신 내용 확인했습니다. 구체적인 상담을 위해 잠시 후 전화 드려도 될까요?";
+            }
+
+            const bubbleClass = type === 'ai' ? 'chat-ai' : 'chat-you';
+            const rowClass = type === 'ai' ? 'you' : 'you';
+            const iconHtml = type === 'ai' ? '<i class="fas fa-robot mr-1 text-emerald-600 text-xs"></i>' : '';
+            const replyTimeStr = getCurrentTimeStr();
+            
+            chatBody.innerHTML += `
+            <div class="chat-row ${rowClass}">
+                <div class="chat-bubble ${bubbleClass}">
+                    ${iconHtml}${reply}
+                </div>
+                <span class="chat-time">${replyTimeStr}</span>
+            </div>`;
+            
+            chatHistoryStore[currentChatId].push({ type: type, text: reply, time: replyTimeStr });
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }, 1000);
+    }
+
+    async function fetchExpertsData() {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/experts`, {
+                method: 'GET',
+                mode: 'cors',
+            });
+            if (!res.ok) {
+                const text = await res.text().catch(() => '');
+                throw new Error(`HTTP ${res.status} ${res.statusText} ${text}`);
+            }
+            const data = await res.json();
+
+            if (!Array.isArray(data) || data.length === 0) {
+                throw new Error('MongoDB에서 전문가 데이터가 비어 있습니다.');
+            }
+
+            expertsData = data.map(e => ({
+                id: e._id,
+                name: `${e.firstName ?? ''} ${e.lastName ?? ''}`.trim() || e.name || '이름 미상',
+                category: e.category || '기타',
+                tag: e.tag || '',
+                img: e.profileImage || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?fit=crop&w=200&h=200",
+                desc: e.desc || ''
+            }));
+
+            console.log('전문가 데이터 로드 완료 (MongoDB):', expertsData.length, '명');
+        } catch (err) {
+            console.error('전문가 데이터 불러오기 실패 (MongoDB):', err);
+            expertsData = [];
+
+            // 전문가 페이지 안에서 바로 에러 메시지 보여주기
+            const container = document.getElementById('expert-list-area');
+            if (container) {
+                container.innerHTML = `
+                    <div class="bg-red-50 border border-red-100 text-red-600 rounded-2xl p-4 text-sm leading-relaxed mt-2">
+                        <p class="font-bold mb-1">전문가 데이터를 불러오는 중 오류가 발생했습니다.</p>
+                        <p class="text-[11px] text-red-500 mb-1">
+                            서버 CORS 설정 문제로 <span class="font-mono">https://app.unfoldlab-legalpro.com</span> 에 접속할 수 없습니다.
+                        </p>
+                        <p class="text-[11px] text-red-400">
+                            관리자에게 CORS(<span class="font-mono">Access-Control-Allow-Origin</span>) 설정을 확인해 달라고 요청해 주세요.
+                        </p>
+                    </div>
+                `;
+            }
+
+            showToast('전문가 서버(CORS) 오류로 데이터를 불러오지 못했습니다.');
+        }
+    }
+
+    function filterExperts(category) {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            if(btn.dataset.cat === category) {
+                btn.classList.add('bg-slate-800', 'text-white');
+                btn.classList.remove('bg-slate-100', 'text-slate-500');
+            } else {
+                btn.classList.remove('bg-slate-800', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-500');
+            }
+        });
+
+        const container = document.getElementById('expert-list-area');
+        container.innerHTML = `<p class="text-[11px] font-bold text-emerald-600 mb-3 px-1 animate-pulse">● ${category} 전문 파트너 실시간 연결 가능</p>`;
+        
+        expertsData.forEach((expert, index) => {
+            if(category !== '전체' && expert.category !== category) return;
+            container.innerHTML += `
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 flex gap-4 items-start shadow-sm mb-3">
+                <div class="w-12 h-12 rounded-full bg-slate-100 overflow-hidden flex-shrink-0"><img src="${expert.img}" class="w-full h-full object-cover"></div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-1 mb-1"><h3 class="font-bold text-slate-800 text-sm">${expert.name}</h3><i class="fas fa-check-circle text-blue-500 text-[10px]"></i></div>
+                    <span class="inline-block bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded mb-2">${expert.category} 전문</span>
+                    <p class="text-xs text-slate-400 line-clamp-1">"${expert.desc}"</p>
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="startChat('EXPERT', ${index}, 'expert')" class="flex-1 bg-slate-50 text-slate-600 py-2 rounded-lg text-xs font-bold hover:bg-emerald-50 hover:text-emerald-600 transition-colors">채팅</button>
+                        <button onclick="if(confirm('안심번호로 연결하시겠습니까?')) showToast('전화 연결 중...')" class="flex-1 bg-emerald-50 text-emerald-600 py-2 rounded-lg text-xs font-bold hover:bg-emerald-500 hover:text-white transition-colors">전화</button>
+                    </div>
+                </div>
+            </div>`;
+        });
+    }
+
+    function selfTreat() {
+        const textToCopy = `[수정 요청] 임대차 계약서 특약 조항 수정 부탁드립니다.\n\n안녕하세요 임대인님.\n1. "퇴거 시 원상복구" 조항은 "고의/과실에 의한 파손 시"로 구체화 부탁드립니다.\n2. "잔금일 전까지 근저당권 말소" 특약을 추가해주시면 감사하겠습니다.\n\n확인 부탁드립니다.`;
+        navigator.clipboard.writeText(textToCopy).then(() => showToast("수정 요청 텍스트가 복사되었습니다!")).catch(err => {
+             const textArea = document.createElement("textarea"); textArea.value = textToCopy; document.body.appendChild(textArea); textArea.select(); document.execCommand("Copy"); textArea.remove(); showToast("수정 요청 텍스트가 복사되었습니다!");
+        });
+    }
+
+    function uploadEvidence() { document.getElementById('file-input').click(); }
+
+    // 날짜를 'YYYY.MM.DD' 형식으로 변환 (예: 2025.12.08)
+    function formatDateKR(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}.${m}.${d}`;
+    }
+
+    function handleFileSelect(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const list = document.getElementById('evidence-list');
+            const dateStr = formatDateKR(new Date());
+            showToast('파일이 안전하게 암호화되어 업로드되었습니다.');
+            list.innerHTML += `<div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg transition-colors">
+                <div class="w-8 h-8 bg-slate-100 text-slate-500 rounded flex items-center justify-center text-xs">
+                    <i class="fas fa-file"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-slate-700 truncate">${file.name}</p>
+                    <p class="text-[10px] text-slate-400">${dateStr} 업로드</p>
+                </div>
+                <div class="w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center">
+                    <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                </div>
+            </div>`;
+        }
+    }
+
+    function startUniversalScan() {
+        toggleVipBtn(false);
+        document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+        document.getElementById('screen-scan').style.display = 'flex';
+        
+        const detail = document.getElementById('scan-detail');
+        const title = document.getElementById('scan-title');
+        setTimeout(() => { title.innerText = "문서 윤곽 인식..."; }, 1000);
+        setTimeout(() => { title.innerText = "부동산 임대차 계약서 확인"; detail.innerHTML = '<i class="fas fa-file-contract mr-2"></i><span>Standard Lease Agreement</span>'; }, 2000);
+        setTimeout(() => { 
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            document.getElementById('screen-result').style.display = 'flex';
+            setTimeout(() => { document.getElementById('coupon-popup').style.display = 'flex'; }, 2000); 
+        }, 3500);
+    }
+
+    // 스캔 소스 선택 모달 열기
+    function openScanSourceChooser() {
+        const modal = document.getElementById('scan-source-modal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function closeScanSourceModal() {
+        const modal = document.getElementById('scan-source-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function chooseScanSource(source) {
+        closeScanSourceModal();
+        openCameraAndScan(source);
+    }
+
+    // 실제 카메라/갤러리에서 이미지를 선택한 뒤 스캔 플로우로 연결
+    function openCameraAndScan(source) {
+        // 웹 표준 input을 사용해 카메라 또는 갤러리 호출 (모바일에서 카메라/앨범 선택)
+        let input = document.getElementById('scan-file-input');
+        if (!input) {
+            input = document.createElement('input');
+            input.type = 'file';
+            input.id = 'scan-file-input';
+            input.style.display = 'none';
+
+            input.addEventListener('change', (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+
+                // 여기에서 파일을 서버로 업로드하거나, 추후 AI 분석 로직에 넘길 수 있음
+                console.log('선택된 파일:', file);
+
+                showToast('사진이 선택되었습니다. AI가 분석을 시작합니다.');
+                // 기존 스캔 애니메이션/결과 화면으로 연결
+                startUniversalScan();
+
+                // 같은 파일이 다시 선택될 수 있도록 value 초기화
+                e.target.value = '';
+            });
+
+            document.body.appendChild(input);
+        }
+
+        // 소스에 따라 capture / accept 속성 설정
+        if (source === 'camera') {
+            // 카메라로 바로 촬영: 이미지 전용 + 후면 카메라 권장
+            input.accept = 'image/*';
+            input.capture = 'environment';
+        } else {
+            // 파일에서 선택: 사진, 문서, 녹음파일 등 어떤 타입이든 허용
+            input.accept = '';
+            input.removeAttribute('capture');
+        }
+
+        input.click();
+    }
+
+    function closePopup() { document.getElementById('coupon-popup').style.display = 'none'; }
+    function copyCoupon() { navigator.clipboard.writeText("MOVE-2026").then(() => showToast("쿠폰 코드가 복사되었습니다!")); }
+    function saveCoupon() { savedCoupons.push({ title: "이삿짐 센터 5만원 할인", desc: "Unfold 파트너 전용", code: "MOVE-2026" }); showToast('쿠폰함에 저장되었습니다.'); closePopup(); }
+
+    // --- 프로필 관리 ---
+    const emojis = ['😎', '😊', '🤔', '🧐', '🤠', '🤓', '🤖', '👻', '🐶', '🐱'];
+    let currentEmojiIndex = 0;
+    let isProfileImageMode = false;
+    let tempProfileImage = null;
+
+    function initProfile() {
+        const savedName = localStorage.getItem('profileName');
+        const savedEmoji = localStorage.getItem('profileEmoji');
+        const savedImage = localStorage.getItem('profileImage');
+        
+        if (savedName) {
+            document.getElementById('profile-name-display').innerText = savedName;
+        }
+        
+        // 이미지 우선 확인
+        if (savedImage) {
+            // 메인 프로필
+            document.getElementById('profile-icon').style.display = 'none';
+            const img = document.getElementById('profile-img');
+            img.src = savedImage;
+            img.classList.remove('hidden');
+            
+            // 수정 화면 프로필 (초기값 세팅)
+            document.getElementById('edit-profile-icon').style.display = 'none';
+            const editImg = document.getElementById('edit-profile-img');
+            editImg.src = savedImage;
+            editImg.classList.remove('hidden');
+            
+            isProfileImageMode = true;
+        } else {
+            // 이모지 모드
+            if (savedEmoji) {
+                document.getElementById('profile-icon').innerText = savedEmoji;
+                currentEmojiIndex = emojis.indexOf(savedEmoji);
+                if(currentEmojiIndex === -1) currentEmojiIndex = 0;
+            }
+            
+            // 메인 프로필
+            document.getElementById('profile-icon').style.display = 'block';
+            document.getElementById('profile-img').classList.add('hidden');
+            
+            isProfileImageMode = false;
+        }
+    }
+
+    function changeProfileEmoji() {
+        // 이모지 모드로 전환
+        isProfileImageMode = false;
+        tempProfileImage = null; // 임시 이미지 초기화
+        
+        document.getElementById('edit-profile-img').classList.add('hidden');
+        const icon = document.getElementById('edit-profile-icon');
+        icon.style.display = 'block';
+        
+        // 랜덤 선택 (현재와 다른 이모지가 나오도록)
+        let newIndex;
+        do {
+            newIndex = Math.floor(Math.random() * emojis.length);
+        } while (newIndex === currentEmojiIndex && emojis.length > 1);
+
+        currentEmojiIndex = newIndex;
+        icon.innerText = emojis[currentEmojiIndex];
+    }
+    
+    function uploadProfileImage() {
+        document.getElementById('profile-upload-input').click();
+    }
+    
+    function handleProfileImageChange(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                // 이미지 모드로 전환 및 미리보기
+                isProfileImageMode = true;
+                tempProfileImage = e.target.result;
+                
+                const editImg = document.getElementById('edit-profile-img');
+                editImg.src = tempProfileImage;
+                editImg.classList.remove('hidden');
+                
+                document.getElementById('edit-profile-icon').style.display = 'none';
+            }
+            
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function saveProfile() {
+        const nameInput = document.getElementById('edit-profile-name');
+        const newName = nameInput.value.trim();
+
+        if (!newName) {
+            showToast('이름을 입력해주세요.');
+            return;
+        }
+
+        // 이름 저장
+        localStorage.setItem('profileName', newName);
+        document.getElementById('profile-name-display').innerText = newName;
+
+        // 이미지 vs 이모지 저장 분기
+        if (isProfileImageMode) {
+            // 현재 화면에 떠있는 이미지가 있다면 저장 (temp가 없으면 기존꺼 유지)
+            // tempProfileImage가 있다는 건 새로 업로드했다는 뜻
+            // tempProfileImage가 없고 isProfileImageMode가 true면 기존 이미지를 유지한다는 뜻(별도 저장 불필요하나 로직 통일 위해)
+            
+            const currentSrc = document.getElementById('edit-profile-img').src;
+            if(currentSrc && currentSrc !== window.location.href) { // src가 비어있지 않다면
+                 try {
+                     localStorage.setItem('profileImage', currentSrc);
+                     localStorage.removeItem('profileEmoji'); // 이미지가 있으면 이모지 삭제
+                     
+                     // 메인 화면 반영
+                     const mainImg = document.getElementById('profile-img');
+                     mainImg.src = currentSrc;
+                     mainImg.classList.remove('hidden');
+                     document.getElementById('profile-icon').style.display = 'none';
+                 } catch (e) {
+                     showToast('이미지 용량이 너무 커서 저장되지 않았습니다.');
+                     console.error(e);
+                     return;
+                 }
+            }
+        } else {
+            // 이모지 저장
+            const newEmoji = document.getElementById('edit-profile-icon').innerText;
+            localStorage.setItem('profileEmoji', newEmoji);
+            localStorage.removeItem('profileImage'); // 이모지면 이미지 삭제
+            
+            // 메인 화면 반영
+            const mainIcon = document.getElementById('profile-icon');
+            mainIcon.innerText = newEmoji;
+            mainIcon.style.display = 'block';
+            document.getElementById('profile-img').classList.add('hidden');
+        }
+
+        showToast('프로필이 수정되었습니다.');
+        backToMenu();
+    }
+
+    function goToSubMenu(page) {
+        // 기존 originalGoToSubMenu 로직 대체 (함수 재정의 방식 문제 방지 위해 직접 구현)
+        document.querySelectorAll('.screen').forEach(s => {
+            s.style.display = 'none';
+            s.classList.remove('active');
+        });
+
+        const target = document.getElementById('screen-' + page);
+        if(target) {
+            target.style.display = 'flex';
+            target.classList.add('fade-in');
+            target.classList.add('active');
+        }
+
+        toggleVipBtn(false);
+        if(page === 'coupons') renderCoupons();
+
+        if (page === 'profile-edit') {
+            // 현재 메인 화면 상태를 그대로 수정 화면으로 복사
+            const savedImage = localStorage.getItem('profileImage');
+            const savedEmoji = localStorage.getItem('profileEmoji');
+            const savedName = localStorage.getItem('profileName');
+            
+            if (savedName) document.getElementById('edit-profile-name').value = savedName;
+            
+            if (savedImage) {
+                // 이미지 모드 초기화
+                isProfileImageMode = true;
+                const editImg = document.getElementById('edit-profile-img');
+                editImg.src = savedImage;
+                editImg.classList.remove('hidden');
+                document.getElementById('edit-profile-icon').style.display = 'none';
+            } else {
+                // 이모지 모드 초기화
+                isProfileImageMode = false;
+                document.getElementById('edit-profile-img').classList.add('hidden');
+                const editIcon = document.getElementById('edit-profile-icon');
+                editIcon.style.display = 'block';
+                if(savedEmoji) editIcon.innerText = savedEmoji;
+            }
+            
+            // 파일 입력 초기화
+            document.getElementById('profile-upload-input').value = '';
+            tempProfileImage = null;
+        }
+    }
+
+    function logout() {
+        // 간단한 로그아웃: 추후 토큰/세션 정리 로직을 추가하고, 현재는 로그인 화면으로만 이동
+        window.location.href = 'auth.html';
+    }
+
+    // 현재 활성화된 화면 ID를 반환
+    function getActiveScreenId() {
+        const screens = Array.from(document.querySelectorAll('.screen'));
+        const active = screens.find(s => s.style.display === 'flex' || s.classList.contains('active'));
+        return active ? active.id : null;
+    }
+
+    // 안드로이드 하드웨어 뒤로가기 동작 처리
+    function handleBackNavigation() {
+        const activeId = getActiveScreenId();
+        if (!activeId) return false;
+
+        // 1) 채팅 화면 → 이전 화면으로
+        if (activeId === 'screen-chat') {
+            backToPrevFromChat();
+            return true;
+        }
+
+        // 2) 고민 상세 / 쓰기 → 고민 목록으로
+        if (activeId === 'screen-community-detail') {
+            backToCommunityFromDetail();
+            return true;
+        }
+        if (activeId === 'screen-community-write') {
+            backToCommunityFromWrite();
+            return true;
+        }
+
+        // 3) 메뉴의 서브 화면들 → 메인 메뉴로
+        if (activeId === 'screen-coupons' || activeId === 'screen-payment' || activeId === 'screen-settings' || activeId === 'screen-profile-edit') {
+            backToMenu();
+            return true;
+        }
+
+        // 4) 추천 전문가 / 스캔 / 결과 화면 → 홈으로
+        if (activeId === 'screen-recommendation' || activeId === 'screen-scan' || activeId === 'screen-result') {
+            goToHome();
+            return true;
+        }
+
+        // 5) 하단 탭 화면(내 사건 / 전문가 / 고민상담 / 메뉴) → 히스토리 or 홈
+        if (activeId === 'screen-case' || activeId === 'screen-expert' || activeId === 'screen-community' || activeId === 'screen-menu') {
+            if (tabHistory.length > 0) {
+                isBackNav = true; // 히스토리 이동임을 표시 (스택에 또 쌓지 않기 위해)
+                const prevTab = tabHistory.pop();
+                switchTab(prevTab);
+                return true;
+            }
+            // 히스토리가 없으면 홈으로 (이미 홈이면 아래 로직으로 넘어감)
+            if (activeId !== 'screen-home') {
+                isBackNav = true;
+                switchTab('home');
+                return true;
+            }
+        }
+
+        // 6) 이미 홈이면 false 반환 → 앱 종료 허용
+        if (activeId === 'screen-home') {
+            return false;
+        }
+
+        return false;
+    }
+
+    // --- 채팅 화면 키보드 대응 ---
+    function setupChatKeyboardHandling() {
+        const chatInput = document.getElementById('chat-input');
+        const chatBody = document.getElementById('chat-body');
+        if (!chatInput || !chatBody) return;
+
+        const updateKeyboardOffset = () => {
+            let inset = 0;
+            if (window.visualViewport) {
+                const vv = window.visualViewport;
+                inset = Math.max(0, window.innerHeight - vv.height - Math.max(vv.offsetTop, 0));
+            }
+            document.documentElement.style.setProperty('--kb-offset', `${inset}px`);
+        };
+
+        const scrollToBottom = () => {
+            chatBody.scrollTop = chatBody.scrollHeight;
+        };
+
+        chatInput.addEventListener('focus', () => {
+            updateKeyboardOffset();
+            setTimeout(() => { updateKeyboardOffset(); scrollToBottom(); }, 120);
+            setTimeout(() => { updateKeyboardOffset(); scrollToBottom(); }, 280);
+        });
+
+        chatInput.addEventListener('blur', () => {
+            setTimeout(updateKeyboardOffset, 50);
+        });
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => { updateKeyboardOffset(); scrollToBottom(); });
+            window.visualViewport.addEventListener('scroll', () => { updateKeyboardOffset(); });
+        }
+        window.addEventListener('resize', () => { updateKeyboardOffset(); scrollToBottom(); });
+
+        // 헤더 밀림 방지: body 스크롤 강제 0
+        window.addEventListener('scroll', () => {
+            if (window.scrollY !== 0) window.scrollTo(0, 0);
+        });
+
+        // 초기화
+        updateKeyboardOffset();
+    }
+
+    function getKeyboardInset() {
+        if (window.visualViewport) {
+            const viewport = window.visualViewport;
+            const inset = Math.max(0, window.innerHeight - viewport.height - Math.max(viewport.offsetTop, 0));
+            return inset;
+        }
+        return 0;
+    }
+
+    function keepBottomNavAboveKeyboard() {
+        const nav = document.querySelector('.top-nav');
+        if (!nav) return;
+        const inset = getKeyboardInset();
+        nav.style.bottom = `${inset}px`;
+    }
+
+    function observeBottomNavForKeyboard() {
+        const nav = document.querySelector('.top-nav');
+        if (!nav) return;
+
+        const resetNav = () => {
+            nav.style.bottom = '0px';
+        };
+
+        const applyInset = () => keepBottomNavAboveKeyboard();
+
+        if (window.visualViewport) {
+            const viewport = window.visualViewport;
+            viewport.addEventListener('resize', applyInset);
+            viewport.addEventListener('scroll', applyInset);
+        } else {
+            window.addEventListener('resize', applyInset);
+        }
+
+        document.addEventListener('focusin', () => setTimeout(applyInset, 60));
+        document.addEventListener('focusout', () => setTimeout(resetNav, 60));
+
+        const keyboardPlugin = window.Capacitor?.Plugins?.Keyboard;
+        if (keyboardPlugin && typeof keyboardPlugin.addListener === 'function') {
+            keyboardPlugin.addListener('keyboardWillShow', info => {
+                nav.style.bottom = `${info.keyboardHeight ?? getKeyboardInset()}px`;
+            });
+            keyboardPlugin.addListener('keyboardWillHide', () => resetNav());
+        }
+    }
+
+    let isBiometricEnabled = false;
+
+    // --- 생체 인증 (Biometric) ---
+    // 실제 기기 연동을 위해서는 '@capacitor-community/native-biometric' 플러그인 설치 필요
+    // 현재는 UI 및 설정값 저장 로직만 구현
+    
+    function initBiometric() {
+        const saved = localStorage.getItem('useBiometric');
+        isBiometricEnabled = saved === 'true';
+        updateBiometricUI();
+        
+        if (isBiometricEnabled) {
+            // 앱 시작 시 인증 요청 (실제 구현 시 여기에 플러그인 호출)
+            console.log("생체 인증 요청...");
+            // checkBiometric(); 
+        }
+    }
+
+    function toggleBiometric() {
+        isBiometricEnabled = !isBiometricEnabled;
+        localStorage.setItem('useBiometric', isBiometricEnabled);
+        updateBiometricUI();
+        
+        if (isBiometricEnabled) {
+            showToast('생체 인증이 설정되었습니다.');
+        } else {
+            showToast('생체 인증이 해제되었습니다.');
+        }
+    }
+
+    function updateBiometricUI() {
+        const track = document.getElementById('biometric-track');
+        const knob = document.getElementById('biometric-knob');
+        if (!track || !knob) return;
+
+        if (isBiometricEnabled) {
+            track.classList.remove('bg-slate-200');
+            track.classList.add('bg-emerald-500');
+            knob.style.transform = 'translateX(16px)';
+        } else {
+            track.classList.add('bg-slate-200');
+            track.classList.remove('bg-emerald-500');
+            knob.style.transform = 'translateX(0px)';
+        }
+    }
+    function applyDarkModeFromStorage() {
+        const saved = window.localStorage ? localStorage.getItem('theme') : null;
+        if (saved === 'dark') {
+            isDarkMode = true;
+            document.body.classList.add('dark-mode');
+        } else {
+            isDarkMode = false;
+            document.body.classList.remove('dark-mode');
+        }
+        updateDarkModeUI();
+    }
+
+    function toggleDarkMode() {
+        isDarkMode = !isDarkMode;
+        if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+            if (window.localStorage) localStorage.setItem('theme', 'dark');
+        } else {
+            document.body.classList.remove('dark-mode');
+            if (window.localStorage) localStorage.setItem('theme', 'light');
+        }
+        updateDarkModeUI();
+    }
+
+    function updateDarkModeUI() {
+        const track = document.getElementById('dark-mode-track');
+        const knob = document.getElementById('dark-mode-knob');
+        if (!track || !knob) return;
+
+        if (isDarkMode) {
+            track.classList.remove('bg-slate-200');
+            track.classList.add('bg-emerald-500');
+            knob.style.transform = 'translateX(16px)';
+        } else {
+            track.classList.add('bg-slate-200');
+            track.classList.remove('bg-emerald-500');
+            knob.style.transform = 'translateX(0px)';
+        }
+    }
+
+    // [권한 요청] 안드로이드 런타임 권한 요청 (앱 시작 시 또는 필요 시 호출)
+    async function requestPermissions() {
+        if (typeof Capacitor !== 'undefined' && Capacitor.Plugins) {
+            try {
+                const { Camera } = Capacitor.Plugins;
+                if (Camera) {
+                    // 카메라 권한 요청
+                    await Camera.requestPermissions();
+                }
+                
+                // 마이크, 저장소 등 다른 권한은 해당 플러그인을 사용할 때 자동 요청되거나
+                // 별도 플러그인이 필요할 수 있음. 
+                // 여기서는 가장 중요한 카메라 권한을 우선 확보.
+            } catch (e) {
+                console.log("권한 요청 중 오류 (플러그인 미설치 등):", e);
+            }
+        } else {
+            console.log("웹 환경이므로 권한 요청을 건너뜁니다.");
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const hash = window.location.hash.replace('#', '').trim();
+        const allowedTabs = ['home', 'case', 'expert', 'community', 'menu'];
+        const initialTab = allowedTabs.includes(hash) ? hash : 'home';
+
+        switchTab(initialTab);
+        updateCommunityAnonUI();
+        // 앱 시작 시 MongoDB(백엔드)에서 전문가 목록 가져오기
+        fetchExpertsData();
+        // 채팅 키보드 대응 초기화
+        setupChatKeyboardHandling();
+        // observeBottomNavForKeyboard(); 
+        // 다크 모드 초기화
+        applyDarkModeFromStorage();
+        // 프로필 초기화
+        initProfile();
+        // 생체 인증 초기화
+        initBiometric();
+        
+        // [추가] 앱 시작 시 권한 요청 시도
+        requestPermissions();
+
+         // 안드로이드 하드웨어 뒤로가기 버튼 처리 (Capacitor)
+         // Capacitor가 있을 경우 하드웨어 뒤로가기 이벤트도 감지 (네이티브 환경)
+         const CapacitorApp = (window.Capacitor && (window.Capacitor.App || (window.Capacitor.Plugins && window.Capacitor.Plugins.App))) || null;
+         if (CapacitorApp && typeof CapacitorApp.addListener === 'function') {
+             CapacitorApp.addListener('backButton', () => {
+                 const handled = handleBackNavigation();
+                 if (handled) return; // 화면 전환만 하고 종료 막기
+
+                 const activeId = getActiveScreenId();
+                 if (activeId === 'screen-home' && typeof CapacitorApp.exitApp === 'function') {
+                     CapacitorApp.exitApp();
+                 }
+             });
+         }
+
+         // 브라우저 히스토리를 이용한 뒤로가기 처리 (웹뷰/브라우저 공통)
+         try {
+             // 최소 2개의 history 스택을 만들어서 뒤로가기가 popstate로 먼저 들어오게 함
+             history.pushState({ screen: getActiveScreenId() }, '');
+
+             window.addEventListener('popstate', () => {
+                 const handled = handleBackNavigation();
+                 if (handled) {
+                     // 우리가 화면 이동을 처리했으면, 다시 앞으로 한 스텝을 쌓아서
+                     // 다음 뒤로가기도 popstate로 먼저 들어오게 유지
+                     history.pushState({ screen: getActiveScreenId() }, '');
+                 }
+                 // handled가 false 이면(=홈 화면) 히스토리가 한 단계 줄어들고,
+                 // 그 다음 뒤로가기에선 앱/브라우저가 종료됨
+             });
+         } catch (e) {
+             console.error('history API 사용 중 오류:', e);
+         }
+    });
+</script>
+
+</body>
+</html>
+
+

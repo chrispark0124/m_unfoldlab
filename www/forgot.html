@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>비밀번호 찾기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background: linear-gradient(180deg, #f8fbff 0%, #eef2f7 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0f172a;
+        }
+        .mobile-frame {
+            width: 100%;
+            max-width: 420px;
+            min-height: 100vh;
+            background-color: #f8fbff;
+            box-shadow: 0 10px 28px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        .input {
+            background: #ffffff;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body>
+
+<div class="mobile-frame">
+    <div class="flex items-center justify-between px-6 pt-5 pb-3">
+        <button onclick="window.location.href='auth.html#login'" class="text-slate-500 hover:text-slate-800"><i class="fas fa-arrow-left"></i></button>
+        <h1 class="text-base font-bold text-slate-800">비밀번호 찾기</h1>
+        <span class="w-5"></span>
+    </div>
+
+    <div class="flex-1 px-6 pb-10">
+        <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+            <p class="text-sm text-slate-900 font-extrabold mb-1">가입 이메일과 인증번호를 입력해 주세요</p>
+            <p class="text-[12px] text-slate-500 mb-4">메일로 받은 인증번호와 새 비밀번호를 입력 후 재설정하세요.</p>
+
+            <label class="block text-[11px] font-bold text-slate-500 mb-1.5">이메일</label>
+            <div class="flex gap-2">
+                <input id="reset-email" type="email" required placeholder="example@email.com"
+                    class="w-full px-3 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 input">
+                <button type="button" onclick="requestCode()" class="px-3 py-2 rounded-xl bg-slate-900 text-white text-[11px] font-bold whitespace-nowrap hover:bg-slate-800 active:scale-95 transition">
+                    인증 요청
+                </button>
+            </div>
+
+            <label class="block text-[11px] font-bold text-slate-500 mb-1.5 mt-4">인증번호</label>
+            <input id="reset-code" type="text" required placeholder="인증번호를 입력해주세요."
+                class="w-full px-3 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 input">
+
+            <label class="block text-[11px] font-bold text-slate-500 mb-1.5 mt-4">새 비밀번호</label>
+            <div class="relative">
+                <input id="reset-password" type="password" required placeholder="새 비밀번호를 입력하세요"
+                    class="w-full pl-3 pr-10 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 input">
+                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" onclick="togglePassword('reset-password', this)">
+                    <i class="fas fa-eye-slash"></i>
+                </button>
+            </div>
+
+            <label class="block text-[11px] font-bold text-slate-500 mb-1.5 mt-4">새 비밀번호 확인</label>
+            <div class="relative">
+                <input id="reset-password-confirm" type="password" required placeholder="다시 한 번 입력하세요"
+                    class="w-full pl-3 pr-10 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 input">
+                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" onclick="togglePassword('reset-password-confirm', this)">
+                    <i class="fas fa-eye-slash"></i>
+                </button>
+            </div>
+
+            <button onclick="sendReset()" class="w-full mt-5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold py-3 rounded-xl shadow-md shadow-emerald-200 active:scale-95 transition-transform">
+                비밀번호 재설정
+            </button>
+
+            <button onclick="window.location.href='auth.html#login'" class="w-full mt-3 text-slate-500 text-xs underline">
+                로그인 화면으로 돌아가기
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function sendReset() {
+    const email = document.getElementById('reset-email')?.value.trim();
+    const code = document.getElementById('reset-code')?.value.trim();
+    const pw = document.getElementById('reset-password')?.value.trim();
+    const pwc = document.getElementById('reset-password-confirm')?.value.trim();
+    if (!email) {
+        alert('이메일을 입력해 주세요.');
+        return;
+    }
+    if (!code) {
+        alert('인증번호를 입력해 주세요.');
+        return;
+    }
+    if (!pw || !pwc) {
+        alert('새 비밀번호를 모두 입력해 주세요.');
+        return;
+    }
+    if (pw !== pwc) {
+        alert('새 비밀번호가 일치하지 않습니다.');
+        return;
+    }
+    // 실제 API 연동 시 여기서 POST 요청을 보내면 됩니다.
+    alert('비밀번호가 재설정되었습니다.');
+    window.location.href = 'auth.html#login';
+}
+
+// 인증번호 요청 (API 연동 시 여기에 코드 추가)
+function requestCode() {
+    const email = document.getElementById('reset-email')?.value.trim();
+    if (!email) {
+        alert('이메일을 입력해 주세요.');
+        return;
+    }
+    // TODO: 실제 인증번호 발송 API 호출
+    alert('인증번호를 전송했습니다. 메일을 확인해 주세요.');
+}
+
+// 비밀번호 표시/숨김 토글
+function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const icon = btn?.querySelector('i');
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    if (icon) {
+        if (isHidden) {
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        } else {
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        }
+    }
+}
+</script>
+
+</body>
+</html>
+

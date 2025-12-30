@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/homeFragment"
+        android:icon="@android:drawable/ic_menu_view"
+        android:title="@string/nav_home" />
+    <item
+        android:id="@+id/casesFragment"
+        android:icon="@android:drawable/ic_menu_agenda"
+        android:title="@string/nav_cases" />
+    <item
+        android:id="@+id/expertFragment"
+        android:icon="@android:drawable/ic_menu_info_details"
+        android:title="@string/nav_expert" />
+    <item
+        android:id="@+id/communityFragment"
+        android:icon="@android:drawable/ic_menu_share"
+        android:title="@string/nav_community" />
+    <item
+        android:id="@+id/menuFragment"
+        android:icon="@android:drawable/ic_menu_manage"
+        android:title="@string/nav_menu" />
+</menu>
+

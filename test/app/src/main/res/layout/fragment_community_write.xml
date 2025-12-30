@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#f8fafc">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageButton
+                android:id="@+id/btn_write_back"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@android:color/transparent"
+                android:src="@android:drawable/ic_media_previous"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="새 고민 올리기"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:gravity="center"
+                android:textColor="#0f172a"/>
+
+            <View
+                android:layout_width="36dp"
+                android:layout_height="36dp"/>
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/input_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="제목"
+            android:background="@drawable/bg_card"
+            android:padding="12dp"
+            android:layout_marginTop="12dp"/>
+
+        <EditText
+            android:id="@+id/input_content"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:hint="상세 내용"
+            android:background="@drawable/bg_card"
+            android:padding="12dp"
+            android:gravity="top"
+            android:layout_marginTop="8dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="투표 (선택)"
+            android:textStyle="bold"
+            android:textColor="#0f172a"
+            android:layout_marginTop="12dp"/>
+
+        <EditText
+            android:id="@+id/input_vote_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="투표 질문"
+            android:background="@drawable/bg_card"
+            android:padding="12dp"
+            android:layout_marginTop="6dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp"
+            android:weightSum="2">
+
+            <EditText
+                android:id="@+id/input_vote_left"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="왼쪽 선택지"
+                android:background="@drawable/bg_card"
+                android:padding="12dp"
+                android:layout_marginEnd="6dp"/>
+
+            <EditText
+                android:id="@+id/input_vote_right"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="오른쪽 선택지"
+                android:background="@drawable/bg_card"
+                android:padding="12dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="12dp">
+
+            <Switch
+                android:id="@+id/switch_write_anon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="익명"
+                android:textColor="#475569"/>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_write_submit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="고민 올리기"
+            android:backgroundTint="#10b981"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"/>
+    </LinearLayout>
+</ScrollView>
+
+

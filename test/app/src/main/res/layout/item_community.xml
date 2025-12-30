@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    card_view:cardCornerRadius="18dp"
+    card_view:cardUseCompatPadding="true"
+    card_view:cardElevation="4dp">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/user"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="익명"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:textColor="@color/text_primary" />
+
+            <TextView
+                android:id="@+id/time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="방금 전"
+                android:textSize="11sp"
+                android:textColor="@color/slate_500" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="제목"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="내용"
+            android:textSize="13sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="4dp" />
+
+        <LinearLayout
+            android:id="@+id/vote_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/slate_50"
+            android:padding="10dp"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            android:clipToPadding="false"
+            android:clipChildren="false"
+            android:layout_marginBottom="4dp">
+
+            <TextView
+                android:id="@+id/vote_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🗳️ 투표"
+                android:textSize="11sp"
+                android:textColor="@color/slate_500"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/vote_left"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="왼쪽"
+                    android:textSize="11sp"
+                    android:textColor="@color/slate_700" />
+
+                <TextView
+                    android:id="@+id/vote_right"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="오른쪽"
+                    android:textSize="11sp"
+                    android:textColor="@color/slate_700"
+                    android:layout_gravity="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="8dp"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal"
+                android:background="@color/slate_100"
+                android:padding="1dp">
+
+                <View
+                    android:id="@+id/vote_left_bar"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@color/accent_green" />
+
+                <View
+                    android:id="@+id/vote_right_bar"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="#ef4444" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
+
+                <TextView
+                    android:id="@+id/vote_left_pct"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="0%"
+                    android:textSize="10sp"
+                    android:textColor="@color/slate_500" />
+
+                <TextView
+                    android:id="@+id/vote_right_pct"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0%"
+                    android:textSize="10sp"
+                    android:textColor="@color/slate_500" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@android:drawable/btn_star_big_off"
+                    android:tint="@color/slate_500" />
+
+                <TextView
+                    android:id="@+id/likes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="12sp"
+                    android:textColor="@color/slate_500"
+                    android:layout_marginStart="6dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginStart="16dp">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@android:drawable/ic_menu_edit"
+                    android:tint="@color/slate_500" />
+
+                <TextView
+                    android:id="@+id/comments"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="12sp"
+                    android:textColor="@color/slate_500"
+                    android:layout_marginStart="6dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+

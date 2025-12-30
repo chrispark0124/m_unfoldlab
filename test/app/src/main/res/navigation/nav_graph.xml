@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/homeFragment">
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.example.myapplication.HomeFragment"
+        android:label="@string/nav_home" />
+
+    <fragment
+        android:id="@+id/casesFragment"
+        android:name="com.example.myapplication.CasesFragment"
+        android:label="@string/nav_cases" />
+
+    <fragment
+        android:id="@+id/expertFragment"
+        android:name="com.example.myapplication.ExpertFragment"
+        android:label="@string/nav_expert" />
+
+    <fragment
+        android:id="@+id/communityFragment"
+        android:name="com.example.myapplication.CommunityFragment"
+        android:label="@string/nav_community" />
+
+    <fragment
+        android:id="@+id/menuFragment"
+        android:name="com.example.myapplication.MenuFragment"
+        android:label="@string/nav_menu" />
+
+    <fragment
+        android:id="@+id/scanFragment"
+        android:name="com.example.myapplication.ScanFragment"
+        android:label="스캔" />
+
+    <fragment
+        android:id="@+id/resultFragment"
+        android:name="com.example.myapplication.ResultFragment"
+        android:label="결과" />
+
+    <fragment
+        android:id="@+id/recommendationFragment"
+        android:name="com.example.myapplication.RecommendationFragment"
+        android:label="추천 전문가" />
+
+    <fragment
+        android:id="@+id/communityDetailFragment"
+        android:name="com.example.myapplication.CommunityDetailFragment"
+        android:label="고민 상세">
+        <argument
+            android:name="index"
+            app:argType="integer" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/communityWriteFragment"
+        android:name="com.example.myapplication.CommunityWriteFragment"
+        android:label="고민 쓰기" />
+
+    <fragment
+        android:id="@+id/chatFragment"
+        android:name="com.example.myapplication.ChatFragment"
+        android:label="채팅">
+        <argument
+            android:name="title"
+            app:argType="string"
+            android:defaultValue="채팅" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/couponsFragment"
+        android:name="com.example.myapplication.CouponsFragment"
+        android:label="쿠폰" />
+
+    <fragment
+        android:id="@+id/paymentFragment"
+        android:name="com.example.myapplication.PaymentFragment"
+        android:label="결제" />
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.example.myapplication.SettingsFragment"
+        android:label="설정" />
+
+</navigation>
+

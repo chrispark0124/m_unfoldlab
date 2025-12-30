@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/slate_50">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp"
+        android:background="@android:color/white"
+        android:elevation="3dp">
+
+        <ImageButton
+            android:id="@+id/btn_chat_back"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/ic_media_previous"/>
+
+        <TextView
+            android:id="@+id/chat_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="채팅"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/text_primary"
+            android:gravity="center"/>
+
+        <View
+            android:layout_width="36dp"
+            android:layout_height="36dp"/>
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/chat_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="12dp"
+        android:clipToPadding="false"
+        android:background="@color/slate_50"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="@android:color/white"
+        android:elevation="4dp"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:padding="8dp"
+            android:src="@android:drawable/ic_input_add"
+            android:tint="@color/slate_500"/>
+
+        <EditText
+            android:id="@+id/input_chat"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="메시지를 입력하세요..."
+            android:background="@drawable/bg_card"
+            android:padding="12dp"
+            android:layout_marginStart="8dp"/>
+
+        <Button
+            android:id="@+id/btn_chat_send"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="전송"
+            android:backgroundTint="@color/accent_green"
+            android:textColor="@android:color/white"
+            android:layout_marginStart="8dp"/>
+    </LinearLayout>
+</LinearLayout>
+
+

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#f8fafc"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="결제 관리"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textColor="#0f172a"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="다음 결제일과 결제 수단을 확인하세요."
+        android:textSize="13sp"
+        android:textColor="#94a3b8"
+        android:layout_marginTop="4dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_card"
+        android:layout_marginTop="12dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="다음 결제일: 2023.11.25"
+            android:textSize="14sp"
+            android:textColor="#0f172a"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Unfold Premium — 4,900원"
+            android:textSize="14sp"
+            android:textColor="#0f172a"
+            android:layout_marginTop="4dp"/>
+    </LinearLayout>
+</LinearLayout>
+
+

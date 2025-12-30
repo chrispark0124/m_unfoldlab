@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Unfold 로그인 / 회원가입</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #F1F5F9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .mobile-frame {
+            width: 100%;
+            max-width: 420px;
+            min-height: 100vh;
+            background-color: #ffffff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Date Input 커스텀 스타일 (아이콘 공간 확보 및 기본 아이콘 투명화) */
+        input[type="date"] {
+            position: relative;
+            padding-right: 40px; 
+            /* iOS 텍스트 정렬 이슈 방지 */
+            text-align: left; 
+        }
+        /* placeholder 느낌을 주기 위해 값이 없을 때 색상 연하게 (JS와 연동 필요 혹은 required:invalid 활용) */
+        input[type="date"]:required:invalid::-webkit-datetime-edit {
+            color: transparent;
+        }
+        input[type="date"]:focus::-webkit-datetime-edit {
+            color: black; 
+        }
+        
+        /* 웹킷 브라우저에서 기본 달력 아이콘 숨기기 (대신 클릭 영역은 유지) */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+<div class="mobile-frame">
+    <div class="flex-1 px-6 pt-16 pb-10 bg-slate-50 overflow-y-auto">
+        <div class="mb-8">
+            <p class="text-xs font-bold text-emerald-500 mb-1 tracking-[0.15em]">UNFOLD LEGAL</p>
+            <h1 class="text-2xl font-extrabold text-slate-900 leading-snug">
+                내 사건을 지켜 줄<br>
+                <span class="text-emerald-500">안전한 계정</span> 만들기
+            </h1>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+            <div class="bg-slate-100 p-1 rounded-full flex mb-6">
+                <button id="auth-tab-login" type="button" onclick="switchAuthMode('login')" class="flex-1 text-xs font-bold py-2 rounded-full bg-slate-900 text-white">
+                    로그인
+                </button>
+                <button id="auth-tab-signup" type="button" onclick="switchAuthMode('signup')" class="flex-1 text-xs font-bold py-2 rounded-full bg-slate-100 text-slate-500">
+                    회원가입
+                </button>
+            </div>
+
+            <!-- 로그인 폼 -->
+            <form id="auth-login-form" class="space-y-4" onsubmit="handleLogin(event)">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1.5">이메일</label>
+                    <input id="login-email" type="email" required placeholder="이메일을 입력하세요" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1.5">비밀번호</label>
+                    <div class="relative">
+                        <input id="login-password" type="password" required placeholder="비밀번호를 입력하세요" class="w-full pl-3 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-slate-50">
+                        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" onclick="togglePassword('login-password', this)">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-slate-500">
+                    <label class="inline-flex items-center gap-1">
+                        <input id="login-autologin" type="checkbox" class="w-3.5 h-3.5 rounded border-slate-300 text-emerald-500">
+                        <span>자동 로그인</span>
+                    </label>
+                    <button type="button" class="underline" onclick="location.href='forgot.html'">비밀번호 찾기</button>
+                </div>
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold py-3 rounded-xl shadow-md shadow-emerald-200 active:scale-95 transition-transform">
+                    이메일로 로그인
+                </button>
+            </form>
+
+            <!-- 회원가입 폼 -->
+            <form id="auth-signup-form" class="space-y-4 hidden" onsubmit="handleSignup(event)">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1.5">이름</label>
+                    <input id="signup-name" type="text" required placeholder="본인 이름을 입력하세요" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1.5">휴대폰 번호</label>
+                    <input 
+                        id="signup-phone"
+                        type="tel"
+                        inputmode="numeric"
+                        pattern="^[0-9]{9,15}$"
+                        maxlength="15"
+                        minlength="9"
+                        oninput="filterPhoneDigits(this)"
+                        placeholder="'-' 없이 숫자만 입력"
+                        required
+                        class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-slate-50 text-slate-700"
+                    >
+                    <p class="text-[11px] text-slate-400 mt-1">예) 01012345678</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1.5">이메일</label>
+                    <input id="signup-email" type="email" required placeholder="로그인에 사용할 이메일" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1.5">비밀번호</label>
+                    <div class="relative">
+                        <input id="signup-password" type="password" required placeholder="8자 이상 영문, 숫자 조합" class="w-full pl-3 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-slate-50">
+                        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" onclick="togglePassword('signup-password', this)">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1.5">비밀번호 확인</label>
+                    <div class="relative">
+                        <input id="signup-password-confirm" type="password" required placeholder="비밀번호를 다시 입력하세요" class="w-full pl-3 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-slate-50">
+                        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" onclick="togglePassword('signup-password-confirm', this)">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                    </div>
+                    <p id="signup-pw-error" class="text-[11px] text-red-500 mt-1 hidden">비밀번호가 일치하지 않습니다.</p>
+                </div>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                    가입 시 <span class="underline">이용약관</span> 및 <span class="underline">개인정보 처리방침</span>에 동의하게 됩니다.
+                </p>
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold py-3 rounded-xl shadow-md shadow-emerald-200 active:scale-95 transition-transform">
+                    이메일로 회원가입
+                </button>
+            </form>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 text-center">
+                <p class="text-[11px] text-slate-400">추후 카카오/네이버 간편 로그인이 추가될 예정입니다.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE_URL = (() => {
+        const host = window.location.hostname;
+        const isCap = !!window.Capacitor;
+        if (window.APP_API_BASE_URL) return window.APP_API_BASE_URL;
+        // Native 앱: 기본적으로 에뮬레이터(로컬 서버)에 붙음. 실기기는 APP_API_BASE_URL로 지정 권장.
+        if (isCap) return 'http://10.0.2.2:3000';
+        // 웹 브라우저 로컬 실행
+        if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:3000';
+        // 기본(배포)
+        return 'https://app.unfoldlab-legalpro.com';
+    })();
+    console.log('[signup] API_BASE_URL', API_BASE_URL);
+
+    function safeSetItem(key, value) {
+        try { localStorage.setItem(key, value); } catch (e) { console.error('[storage set]', key, e); }
+    }
+
+    function switchAuthMode(mode) {
+        const loginBtn = document.getElementById('auth-tab-login');
+        const signupBtn = document.getElementById('auth-tab-signup');
+        const loginForm = document.getElementById('auth-login-form');
+        const signupForm = document.getElementById('auth-signup-form');
+
+        if (mode === 'login') {
+            loginBtn.classList.add('bg-slate-900', 'text-white');
+            loginBtn.classList.remove('bg-slate-100', 'text-slate-500');
+            signupBtn.classList.remove('bg-slate-900', 'text-white');
+            signupBtn.classList.add('bg-slate-100', 'text-slate-500');
+            loginForm.classList.remove('hidden');
+            signupForm.classList.add('hidden');
+        } else {
+            signupBtn.classList.add('bg-slate-900', 'text-white');
+            signupBtn.classList.remove('bg-slate-100', 'text-slate-500');
+            loginBtn.classList.remove('bg-slate-900', 'text-white');
+            loginBtn.classList.add('bg-slate-100', 'text-slate-500');
+            signupForm.classList.remove('hidden');
+            loginForm.classList.add('hidden');
+        }
+    }
+
+    function isValidEmail(email) {
+        return /^[\w.+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email);
+    }
+
+    function filterPhoneDigits(el) {
+        const digits = (el?.value || '').replace(/\D+/g, '').slice(0, 15);
+        if (el && el.value !== digits) el.value = digits;
+        return digits;
+    }
+
+    function handleLogin(e) {
+        if (e) e.preventDefault();
+        const emailEl = document.getElementById('login-email');
+        const pwEl = document.getElementById('login-password');
+        const autoEl = document.getElementById('login-autologin');
+        const email = emailEl?.value?.trim() || '';
+        const pw = pwEl?.value?.trim() || '';
+        if (!isValidEmail(email)) { alert('올바른 이메일 형식이 아닙니다.'); emailEl?.focus(); return; }
+        if (!pw) { alert('비밀번호를 입력하세요.'); pwEl?.focus(); return; }
+
+        (async () => {
+            try {
+                const resp = await fetch(`${API_BASE_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password: pw }),
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok) {
+                    alert(data?.message || '로그인에 실패했습니다. 다시 시도해 주세요.');
+                    return;
+                }
+                const auto = !!(autoEl?.checked);
+                safeSetItem('authLoggedIn', auto ? 'true' : 'false');
+                safeSetItem('authAutoLogin', auto ? 'true' : 'false');
+                sessionStorage.setItem('authLoggedInSession', 'true');
+                if (data?.email) {
+                    const emailNorm = data.email.trim().toLowerCase();
+                    safeSetItem('authEmail', emailNorm);
+                    if (data?.referralCode) {
+                        safeSetItem(`referralCode:${emailNorm}`, data.referralCode);
+                        safeSetItem('referralCode', data.referralCode); // 호환용
+                    }
+                    const serverName = `${(data.firstName || '').trim()} ${(data.lastName || '').trim()}`.trim();
+                    if (serverName) {
+                        safeSetItem(`serverUserName:${emailNorm}`, serverName);
+                        if (!localStorage.getItem(`profileName:${emailNorm}`)) {
+                            safeSetItem(`profileName:${emailNorm}`, serverName);
+                        }
+                    }
+                    if (data?.profileImage) {
+                        safeSetItem(`serverUserImage:${emailNorm}`, data.profileImage);
+                    }
+                }
+                window.location.href = 'index.html#home';
+            } catch (err) {
+                console.error('[login]', err);
+                alert('로그인 중 오류가 발생했습니다. 네트워크 상태를 확인해 주세요.');
+            }
+        })();
+    }
+
+    function handleSignup(e) {
+        if (e) e.preventDefault();
+        const nameEl = document.getElementById('signup-name');
+        const phoneEl = document.getElementById('signup-phone');
+        const emailEl = document.getElementById('signup-email');
+        const pwEl = document.getElementById('signup-password');
+        const pwcEl = document.getElementById('signup-password-confirm');
+        const pwErrEl = document.getElementById('signup-pw-error');
+        if (pwErrEl) pwErrEl.classList.add('hidden');
+        const name = nameEl?.value?.trim() || '';
+        const phoneDigits = filterPhoneDigits(phoneEl);
+        const email = emailEl?.value?.trim() || '';
+        const pw = pwEl?.value?.trim() || '';
+        const pwc = pwcEl?.value?.trim() || '';
+        if (!name) { alert('이름을 입력하세요.'); nameEl?.focus(); return; }
+        if (!phoneDigits || phoneDigits.length < 9) { alert('휴대폰 번호를 정확히 입력하세요.'); phoneEl?.focus(); return; }
+        if (!isValidEmail(email)) { alert('올바른 이메일 형식이 아닙니다.'); emailEl?.focus(); return; }
+        if (!pw) { alert('비밀번호를 입력하세요.'); pwEl?.focus(); return; }
+        if (pw !== pwc) { 
+            if (pwErrEl) pwErrEl.classList.remove('hidden');
+            pwcEl?.focus();
+            return; 
+        }
+
+        (async () => {
+            try {
+                const resp = await fetch(`${API_BASE_URL}/api/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        phoneNumber: phoneDigits,
+                        email,
+                        password: pw,
+                    }),
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok) {
+                    console.error('[signup] failed', resp.status, data);
+                    alert(data?.message ? `회원가입 실패: ${data.message}` : `회원가입 실패 (HTTP ${resp.status}). 다시 시도해 주세요.`);
+                    return;
+                }
+                // 실제 회원가입 처리 후에도 자동 로그인 시키지 않음
+                localStorage.setItem('authLoggedIn', 'false');
+                localStorage.setItem('authAutoLogin', 'false');
+                sessionStorage.removeItem('authLoggedInSession');
+                alert(`회원가입이 완료되었습니다.\n추천인 코드: ${data?.referralCode || '발급됨'}`);
+                switchAuthMode('login');
+            } catch (err) {
+                console.error('[signup]', err);
+                alert('회원가입 중 오류가 발생했습니다. 네트워크 상태를 확인해 주세요.');
+            }
+        })();
+    }
+
+    // 비밀번호 표시/숨김 토글
+    function togglePassword(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const icon = btn?.querySelector('i');
+        const isHidden = input.type === 'password';
+        input.type = isHidden ? 'text' : 'password';
+        if (icon) {
+            if (isHidden) {
+                // 비밀번호 보이기: eye 아이콘
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            } else {
+                // 비밀번호 숨기기: eye-slash 아이콘
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            }
+        }
+    }
+
+    // --- 뒤로 두 번으로 앱 종료 (로그인/회원가입 화면용) ---
+    (function setupAuthDoubleBackExit() {
+        const EXIT_THRESHOLD = 1500; // ms
+        let lastBackPress = 0;
+
+        const tryExit = () => {
+            const now = Date.now();
+            if (now - lastBackPress < EXIT_THRESHOLD) {
+                const CapApp = window.Capacitor?.App || window.Capacitor?.Plugins?.App || null;
+                if (window.AndroidBridge?.exitApp) {
+                    console.log('[auth back] exit via AndroidBridge.exitApp');
+                    window.AndroidBridge.exitApp();
+                } else if (CapApp && typeof CapApp.exitApp === 'function') {
+                    console.log('[auth back] exit via Capacitor.App.exitApp');
+                    CapApp.exitApp();
+                } else if (navigator?.app?.exitApp) {
+                    console.log('[auth back] exit via navigator.app.exitApp');
+                    navigator.app.exitApp();
+                } else {
+                    console.log('[auth back] exit fallback window.close');
+                    window.close();
+                }
+            } else {
+                lastBackPress = now;
+                showAuthToast('한 번 더 누르면 종료됩니다.');
+            }
+        };
+
+        const bindBackHandlers = () => {
+            if (window.history && typeof history.pushState === 'function') {
+                history.pushState({ screen: 'auth', ts: Date.now() }, '');
+            }
+            window.addEventListener('popstate', (e) => {
+                e.preventDefault?.();
+                tryExit();
+                if (window.history && typeof history.pushState === 'function') {
+                    history.pushState({ screen: 'auth', ts: Date.now() }, '');
+                }
+            });
+            // 네이티브 backbutton 이벤트 대응 (Capacitor/Cordova)
+            const handler = (e) => {
+                e?.preventDefault?.();
+                tryExit();
+            };
+            window.addEventListener('backbutton', handler, false);
+            document.addEventListener('backbutton', handler, false);
+        };
+
+        document.addEventListener('DOMContentLoaded', bindBackHandlers);
+    })();
+
+    // 간단 토스트 (auth 전용)
+    function showAuthToast(msg) {
+        let el = document.getElementById('auth-toast');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'auth-toast';
+            el.style.position = 'fixed';
+            el.style.left = '50%';
+            el.style.bottom = '24px';
+            el.style.transform = 'translateX(-50%)';
+            el.style.background = 'rgba(15,23,42,0.9)';
+            el.style.color = '#fff';
+            el.style.padding = '10px 16px';
+            el.style.borderRadius = '12px';
+            el.style.fontSize = '13px';
+            el.style.boxShadow = '0 10px 30px rgba(0,0,0,0.18)';
+            el.style.zIndex = '9999';
+            el.style.display = 'none';
+            document.body.appendChild(el);
+        }
+        el.innerText = msg;
+        el.style.display = 'block';
+        el.style.opacity = '1';
+        el.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => { el.style.opacity = '0'; }, 1400);
+        setTimeout(() => { el.style.display = 'none'; }, 1800);
+    }
+</script>
+
+</body>
+</html>
+
+

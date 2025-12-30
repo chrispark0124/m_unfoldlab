@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp">
+
+    <LinearLayout
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="#e2e8f0"
+        android:padding="6dp"
+        android:layout_marginEnd="8dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="익명"
+            android:textSize="10sp"
+            android:textColor="#0f172a"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            <TextView
+                android:id="@+id/user"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="익명"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#0f172a"/>
+            <TextView
+                android:id="@+id/time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="방금 전"
+                android:textSize="10sp"
+                android:textColor="#94a3b8"
+                android:layout_marginStart="6dp"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="댓글 내용"
+            android:textSize="13sp"
+            android:textColor="#475569"
+            android:layout_marginTop="2dp"/>
+    </LinearLayout>
+</LinearLayout>
+

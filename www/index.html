@@ -1,0 +1,566 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=overlays-content">
+    <title>Unfold: Final Service with Community</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/app.css">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+</head>
+<body>
+
+    <div class="mobile-frame">
+    
+        <div class="content-area" id="main-content">
+        
+            <button id="vip-btn" onclick="goToCase()" class="case-status-btn">
+                <i class="fas fa-briefcase text-amber-400"></i><span>진행 중인 사건</span>
+                <div class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>
+            </button>
+        
+            <div id="toast-msg" class="toast"><i class="fas fa-check-circle mr-2 text-emerald-400"></i><span id="toast-text">알림</span></div>
+        
+            <div id="coupon-popup" class="modal-overlay" onclick="if(event.target === this) closePopup()">
+                <div class="modal-content">
+                    <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 text-center relative overflow-hidden">
+                        <p class="text-blue-100 text-[10px] font-bold mb-1 tracking-wider">PARTNER BENEFIT</p>
+                        <h3 class="text-white text-lg font-extrabold mb-1">이사 준비하세요?</h3>
+                        <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-xl mx-auto shadow-lg my-1">🚚</div>
+                    </div>
+                    <div class="p-4 text-center">
+                        <p class="text-slate-600 text-xs mb-3">이삿짐 센터 <span class="font-bold text-slate-800">5만원 할인</span></p>
+                        <div class="border-2 border-dashed border-slate-200 bg-slate-50 p-2 rounded-lg mb-3 cursor-pointer hover:bg-slate-100 transition" onclick="copyCoupon()">
+                            <p class="text-[10px] text-slate-400">터치하여 복사</p>
+                            <p class="text-sm font-bold text-indigo-600 tracking-widest mt-0.5">MOVE-2026</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="closePopup()" class="flex-1 py-2 rounded-lg bg-slate-100 text-slate-500 font-bold text-xs hover:bg-slate-200">닫기</button>
+                            <button onclick="saveCoupon()" class="flex-1 py-2 rounded-lg bg-indigo-600 text-white font-bold text-xs shadow-md hover:bg-indigo-700">받기</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 스캔 소스 선택 모달 -->
+            <div id="scan-source-modal" class="modal-overlay" onclick="if(event.target === this) closeScanSourceModal()">
+                <div class="modal-content">
+                    <div class="p-5 border-b border-slate-100 text-center">
+                        <p class="text-xs font-bold text-emerald-500 mb-1 tracking-[0.15em]">AI SCAN</p>
+                        <h3 class="text-sm font-extrabold text-slate-800">어디서 불러올까요?</h3>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <button onclick="chooseScanSource('camera')" class="w-full py-3 rounded-xl bg-slate-900 text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                            <i class="fas fa-camera"></i>
+                            <span>카메라로 찍기</span>
+                        </button>
+                        <button onclick="chooseScanSource('file')" class="w-full py-3 rounded-xl bg-slate-100 text-slate-700 text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                            <i class="fas fa-folder-open"></i>
+                            <span>파일에서 선택</span>
+                        </button>
+                        <button onclick="closeScanSourceModal()" class="w-full py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-slate-700 active:scale-95 transition-transform">
+                            취소
+                        </button>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 홈 -->
+            <div id="screen-home" class="screen active pt-24 px-6">
+                <div class="mt-4 mb-4">
+                    <p class="text-slate-400 text-lg font-medium">무엇이 걱정되시나요?</p>
+                    <h1 class="text-3xl font-extrabold text-slate-800 leading-tight mt-1">고민하지 말고<br>그냥 <span class="text-emerald-500">찍으세요.</span></h1>
+                </div>
+                <div class="flex-1 flex flex-col justify-start mt-6 mb-4">
+                    <div onclick="openScanSourceChooser()" class="relative bg-white rounded-[32px] p-8 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-emerald-50 text-center cursor-pointer group active:scale-95 transition-all duration-300 overflow-hidden h-[300px] flex flex-col justify-center items-center hover:border-emerald-200">
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 via-emerald-400 to-orange-400 opacity-80"></div>
+                        <div class="w-28 h-28 mx-auto rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center mb-6 shadow-xl shadow-emerald-200/50 group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-camera text-4xl text-white drop-shadow-md"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2">AI 자동 진단</h2>
+                        <p class="text-slate-500 text-sm font-medium">계약서, 통화녹음, 카톡 대화, 중고거래...<br><span class="font-bold text-emerald-600">AI가 알아서 파악합니다.</span></p>
+                    </div>
+                    <button id="recent-result-btn" onclick="goToResult()" class="mt-4 w-full py-3 rounded-2xl bg-slate-900 text-white text-sm font-bold shadow hover:bg-slate-800 active:scale-95 transition-transform flex items-center justify-center gap-2">
+                        <i class="fas fa-file-alt"></i> 최근 결과 화면 보기
+                    </button>
+                </div>
+            </div>
+        
+            <!-- 스캔 -->
+            <div id="screen-scan" class="screen bg-slate-900 justify-center items-center relative h-full">
+                <img id="scan-bg" data-default-src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80" src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80" class="absolute w-full h-full object-cover opacity-30" alt="document bg">
+                <div class="scanner-line z-10"></div>
+                <div class="z-20 text-center w-full px-8 flex flex-col items-center">
+                    <div class="spinner mb-8"></div>
+                    <h2 id="scan-title" class="text-2xl font-bold text-white mb-4 transition-all duration-500">대상 인식 중...</h2>
+                    <div class="bg-black/60 backdrop-blur-md rounded-full px-5 py-2 border border-white/10 inline-block min-w-[200px]">
+                        <p id="scan-detail" class="text-emerald-400 font-mono text-sm"><i class="fas fa-search mr-2 animate-pulse"></i><span>객체 분석 중...</span></p>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 결과 -->
+            <div id="screen-result" class="screen bg-slate-50 h-full flex flex-col">
+                <div class="bg-white px-8 pb-6 pt-10 rounded-b-[30px] shadow-sm z-10 shrink-0 text-center relative">
+                    <button onclick="goToHome()" class="absolute top-6 right-6 text-slate-300 hover:text-slate-800 p-2"><i class="fas fa-times text-xl"></i></button>
+                    <div class="inline-block bg-red-50 text-red-500 px-4 py-1.5 rounded-full text-sm font-bold mb-4 border border-red-100 animate-bounce"><i class="fas fa-exclamation-triangle mr-2"></i>위험 감지</div>
+                    <h1 class="text-2xl font-bold text-slate-800 mb-2">계약금 떼일 수 있어요</h1>
+                    <p class="text-slate-500 text-sm">특약 조항 2건이 세입자에게 불리합니다.</p>
+                </div>
+                <div class="px-6 py-6 flex-1 overflow-y-auto">
+                    <div id="doc-classify-card" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-4 hidden">
+                        <h3 class="text-[12px] font-bold text-slate-700 mb-1 flex items-center gap-2"><i class="fas fa-tag text-emerald-500"></i> 문서 분류</h3>
+                        <p id="doc-classify-text" class="text-[12px] text-slate-600 whitespace-pre-wrap break-words">분석 중...</p>
+                    </div>
+                    <div id="ocr-card" class="bg-white px-6 py-4 mb-4 rounded-2xl border border-slate-100 shadow-sm hidden">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-[12px] font-bold text-slate-700 flex items-center gap-2"><i class="fas fa-file-alt text-emerald-500"></i> OCR 추출 결과</h3>
+                            <button id="ocr-full-btn" class="text-[11px] text-emerald-600 font-bold" onclick="openOcrModal()">전체보기</button>
+                        </div>
+                        <pre id="ocr-text" class="text-[12px] text-slate-600 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">추출 중...</pre>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-4">
+                        <h3 class="text-slate-400 text-[10px] font-bold uppercase mb-4 tracking-widest">FACT CHECK</h3>
+                        <div id="fact-ai-wrap" class="mb-2 hidden">
+                            <p id="fact-ai-text" class="text-xs text-emerald-700 leading-relaxed whitespace-pre-wrap break-words"></p>
+                        </div>
+                        <p id="fact-empty" class="text-xs text-slate-400">AI 팩트체크 결과가 여기에 표시됩니다.</p>
+                        <button onclick="goToHome()" class="w-full mt-4 py-3 rounded-xl bg-slate-900 text-white text-xs font-bold shadow hover:bg-slate-800 active:scale-95 transition-transform flex items-center justify-center gap-2">
+                            <i class="fas fa-arrow-left"></i> 홈으로 돌아가기
+                        </button>
+                    </div>
+                
+                    <div class="bg-emerald-50 p-6 rounded-3xl shadow-inner border border-emerald-100 mb-4">
+                        <h3 class="text-emerald-600 text-[10px] font-bold uppercase mb-4 tracking-widest"><i class="fas fa-robot mr-1"></i> AI SOLUTION</h3>
+                        
+                        <div class="bg-white rounded-xl p-4 mb-3 border border-emerald-100">
+                        <div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-slate-700">1. 특약 수정 요청하기</span><span class="bg-emerald-100 text-emerald-600 text-[10px] px-2 py-0.5 rounded font-bold">Recommended</span></div>
+                        <p id="ai-solution-req-desc" class="text-xs text-slate-500 mb-3 leading-relaxed">AI 요청문을 준비 중입니다.</p>
+                            <button onclick="selfTreat()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+                                <i class="fas fa-copy"></i> <span>요청 텍스트 복사</span>
+                            </button>
+                        </div>
+                    
+                        <div class="bg-white rounded-xl p-4 border border-emerald-100 mb-3">
+                             <div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-slate-700">2. 표준 계약서 다운로드</span></div>
+                            <p id="ai-solution-template-desc" class="text-xs text-slate-500 mb-0 leading-relaxed">법무부 권장 주택임대차표준계약서 양식을 확인하세요.</p>
+                        </div>
+                    
+                         <div onclick="openContractAiChat()" class="bg-white rounded-xl p-4 border border-emerald-200 cursor-pointer hover:bg-emerald-50 transition-colors flex items-center justify-between shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white shadow-md"><i class="fas fa-comment-dots"></i></div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-700">이 계약서, AI에게 물어보기</p>
+                                    <p id="ai-solution-q" class="text-[10px] text-slate-400">AI가 분석 중입니다.</p>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-emerald-300"></i>
+                        </div>
+                    </div>
+                </div>
+            
+                <div class="p-5 bg-white border-t border-slate-100 shrink-0 z-20">
+                    <p class="text-center text-slate-800 font-bold mb-3 text-sm">전문가의 도움이 필요하신가요?</p>
+                    <div class="flex gap-3">
+                        <button onclick="goToRecommendation()" class="w-full py-3.5 rounded-2xl bg-slate-800 text-white font-bold shadow-lg hover:bg-slate-900 text-xs transition-transform active:scale-95 flex items-center justify-center gap-2">
+                            <span><i class="fas fa-user-shield mr-1"></i> Top 5 변호사 매칭받기</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 내 사건 -->
+            <div id="screen-case" class="screen pt-20 px-0 bg-slate-50 h-full"> 
+                <div class="px-6 mb-6"><h2 class="text-2xl font-bold text-slate-800">나의 사건 관리</h2></div>
+
+                <!-- 빈 상태 -->
+                <div class="mx-6 bg-white p-8 rounded-3xl shadow-sm border border-slate-100 mb-6 text-center flex flex-col items-center">
+                    <div class="w-16 h-16 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center text-2xl mb-4">
+                        <i class="fas fa-folder-open"></i>
+                    </div>
+                    <p class="text-lg font-bold text-slate-800 mb-2">등록된 사건이 없습니다</p>
+                    <p class="text-sm text-slate-500 mb-4">새 사건을 등록하거나 상담을 요청해보세요.</p>
+                    <div class="flex gap-2">
+                        <button onclick="goToRecommendation()" class="px-4 py-2 bg-emerald-500 text-white text-sm font-bold rounded-full hover:bg-emerald-600 active:scale-95 transition">전문가 찾기</button>
+                        <button onclick="goToHome()" class="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-bold rounded-full hover:bg-slate-200 active:scale-95 transition">상담 요청</button>
+                    </div>
+                </div>
+
+                <!-- 안내 카드 -->
+                <div class="mx-6 pb-24 space-y-3">
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                        <p class="text-sm font-bold text-slate-800 mb-1">이렇게 해보세요</p>
+                        <ul class="text-xs text-slate-600 space-y-1 list-disc list-inside text-left">
+                            <li>전문가 프로필을 보고 바로 상담 요청</li>
+                            <li>사건 내용을 간단히 남기면 맞춤 변호사 추천</li>
+                            <li>필요 서류는 상담 후에 안전하게 업로드</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 전문가 -->
+            <div id="screen-expert" class="screen h-full">
+                <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                    <div class="mb-4 flex-shrink-0">
+                        <h2 class="text-2xl font-bold text-slate-800">분야별 전문가</h2>
+                        <p class="text-sm text-slate-500">Unfold가 보증하는 Top-Tier입니다.</p>
+                    </div>
+                    <div class="flex gap-2 overflow-x-auto hide-scrollbar mb-4 pb-2 flex-shrink-0">
+                        <button onclick="filterExperts('전체')" class="filter-btn active px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold transition whitespace-nowrap" data-cat="전체">전체</button>
+                        <button onclick="filterExperts('형사')" class="filter-btn px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold transition whitespace-nowrap" data-cat="형사">⚖️ 형사</button>
+                        <button onclick="filterExperts('이혼')" class="filter-btn px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold transition whitespace-nowrap" data-cat="이혼">💔 이혼</button>
+                        <button onclick="filterExperts('부동산')" class="filter-btn px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold transition whitespace-nowrap" data-cat="부동산">🏠 부동산</button>
+                    </div>
+                    <div id="expert-list-area" class="space-y-3 pb-24 flex-1"></div>
+                </div>
+            </div>
+        
+            <!-- 고민상담: 목록 -->
+            <div id="screen-community" class="screen h-full bg-slate-50">
+                <div class="pt-10 pb-2 px-6 bg-white sticky top-0 z-10 border-b border-slate-100 shadow-sm flex items-end justify-between" style="height: 100px;">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">고민상담</h2>
+                        <p class="text-xs text-slate-500">법률 고민, 익명으로 다수에게 물어보세요!</p>
+                    </div>
+                    <button class="text-emerald-600 font-bold text-sm"><i class="fas fa-bell"></i></button>
+                </div>
+                
+                <div id="community-feed" class="p-4 space-y-4 overflow-y-auto pb-24 flex-1"></div>
+            
+                <button onclick="openCommunityWrite()" class="write-btn">
+                    <i class="fas fa-pen text-lg"></i>
+                </button>
+            </div>
+        
+            <!-- 고민 쓰기 -->
+            <div id="screen-community-write" class="screen h-full bg-slate-50">
+                <div class="pt-6 px-6 pb-4 bg-white border-b border-slate-100 flex items-center justify-between shadow-sm">
+                    <button onclick="backToCommunityFromWrite()" class="text-slate-400 hover:text-slate-800 p-2 -ml-2">
+                        <i class="fas fa-arrow-left text-lg"></i>
+                    </button>
+                    <h2 class="text-sm font-bold text-slate-800">새 고민 올리기</h2>
+                    <span class="w-8"></span>
+                </div>
+            
+                <div class="flex-1 overflow-y-auto px-6 pt-4 pb-24">
+                    <div class="mb-4">
+                        <label class="block text-[11px] font-bold text-slate-500 mb-1.5">제목</label>
+                        <input id="community-write-title" type="text" maxlength="60" placeholder="한 줄로 고민을 요약해 주세요" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                    </div>
+                
+                    <div class="mb-4">
+                        <label class="block text-[11px] font-bold text-slate-500 mb-1.5">상세 내용</label>
+                        <textarea id="community-write-content" rows="6" maxlength="1000" placeholder="언제, 어디서, 누구와 있었던 일인지 편하게 써 주세요. 실명이나 주민번호 등 민감한 정보는 적지 마세요." class="w-full border border-slate-200 rounded-2xl px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"></textarea>
+                        <p class="mt-1 text-[10px] text-slate-400 text-right">최대 1,000자까지 입력 가능 (샘플)</p>
+                    </div>
+                
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-[11px] font-bold text-slate-500">투표 설정 (선택)</label>
+                            <span class="text-[10px] text-slate-400">입력하면 투표 막대가 함께 보여요</span>
+                        </div>
+                        <input id="community-write-vote-title" type="text" maxlength="40" placeholder="예: 도움 되었나요?" class="w-full border border-slate-200 rounded-xl px-3 py-2 mb-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                        <div class="vote-inputs">
+                            <input id="community-write-vote-left" type="text" maxlength="10" placeholder="왼쪽 선택지 (예: 보낸다)" class="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            <input id="community-write-vote-right" type="text" maxlength="10" placeholder="오른쪽 선택지 (예: 기다린다)" class="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                        </div>
+                    </div>
+                
+                    <div class="mb-6 flex items-center justify-between bg-slate-100 rounded-2xl px-3 py-2 anon-row">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs anon-avatar">익명</div>
+                            <div>
+                                <p class="text-[11px] font-bold text-slate-700 anon-title">익명으로 올리기</p>
+                                <p class="text-[10px] text-slate-400 anon-subtitle">닉네임과 프로필만 노출돼요.</p>
+                            </div>
+                        </div>
+                        <button type="button" class="inline-flex items-center cursor-pointer" onclick="toggleCommunityAnon()">
+                            <div id="community-anon-track" class="w-9 h-5 rounded-full relative transition-colors">
+                                <div id="community-anon-knob" class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"></div>
+                            </div>
+                        </button>
+                    </div>
+                
+                    <button onclick="submitCommunityWrite()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold py-3 rounded-xl shadow-md shadow-emerald-200 active:scale-95 transition-transform">
+                        고민 올리기
+                    </button>
+                </div>
+            </div>
+        
+            <!-- 고민 상세 + 댓글 -->
+            <div id="screen-community-detail" class="screen h-full bg-slate-50">
+                <div class="pt-6 px-6 pb-4 bg-white border-b border-slate-100 flex items-center justify-between shadow-sm">
+                    <button onclick="backToCommunityFromDetail()" class="text-slate-400 hover:text-slate-800 p-2 -ml-2">
+                        <i class="fas fa-arrow-left text-lg"></i>
+                    </button>
+                    <h2 class="text-sm font-bold text-slate-800">고민상담</h2>
+                    <div class="relative">
+                        <button id="community-menu-btn" class="w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 flex items-center justify-center" style="display:none" aria-label="글 메뉴" onclick="toggleCommunityMenu(event)">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div id="community-menu-dropdown" class="community-menu-dropdown" style="display:none">
+                            <button type="button" onclick="editCurrentCommunity()" class="community-menu-item">수정</button>
+                            <button type="button" onclick="deleteCurrentCommunity()" class="community-menu-item text-red-500">삭제</button>
+                        </div>
+                    </div>
+                </div>
+            
+                <div id="community-detail-body" class="flex-1 overflow-y-auto px-6 pt-4 pb-12 space-y-4">
+                    <div id="community-detail-post" class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs">👤</div>
+                            <div>
+                                <p id="community-detail-user" class="text-xs font-bold text-slate-800">익명</p>
+                                <p id="community-detail-time" class="text-[10px] text-slate-400">방금 전</p>
+                            </div>
+                        </div>
+                        <h3 id="community-detail-title" class="font-bold text-slate-800 mb-1 text-sm"></h3>
+                        <p id="community-detail-content" class="text-xs text-slate-600 leading-relaxed mb-4 whitespace-pre-line"></p>
+                        <!-- 투표 영역 (있는 글에만 JS로 렌더링) -->
+                        <div id="community-detail-vote" class="mt-2"></div>
+                    </div>
+                
+                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="px-4 py-3 border-b border-slate-50 flex items-center justify-between gap-3">
+                            <p class="text-xs font-bold text-slate-700">댓글 <span id="community-detail-comment-count">0</span>개</p>
+                            <label class="flex items-center gap-2 text-[11px] text-slate-500 whitespace-nowrap px-3 py-2 bg-slate-100 rounded-full">
+                                <span class="font-bold text-slate-600 text-[11px]">익명</span>
+                                <button type="button" id="comment-anon-toggle" class="w-12 h-6 rounded-full bg-emerald-500 relative transition-colors duration-200" aria-label="익명 전환" onclick="toggleCommentAnon()">
+                                    <span id="comment-anon-thumb" class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200" style="transform: translateX(24px);"></span>
+                                </button>
+                            </label>
+                        </div>
+                        <div id="community-comment-bar" class="px-4 py-3 flex items-center gap-2 border-b border-slate-50 flex-wrap">
+                            <input id="community-comment-input" type="text" placeholder="댓글을 입력해 주세요" class="flex-1 min-w-[200px] bg-slate-100 rounded-full px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <button onclick="submitCommunityComment()" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full active:scale-95 transition-transform">
+                                등록
+                            </button>
+                        </div>
+                        <div id="community-comment-list" class="max-h-[320px] overflow-y-auto px-4 py-3 space-y-3"></div>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 추천 전문가 -->
+            <div id="screen-recommendation" class="screen h-full">
+                <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                    <div class="mb-6 flex justify-between items-end flex-shrink-0">
+                        <div><h2 class="text-2xl font-bold text-slate-800">AI 추천 전문가</h2><p class="text-sm text-slate-500">해당 분야 상위 <span class="text-emerald-600 font-bold">5명</span>입니다.</p></div>
+                        <button onclick="closeRecommendation()" class="text-slate-400 text-sm hover:text-slate-800 font-bold">닫기</button>
+                    </div>
+                    <div class="space-y-3 pb-8 flex-1" id="rec-list-container"></div>
+                </div>
+            </div>
+        
+            <!-- 메뉴 / 쿠폰 / 결제 / 설정 -->
+            <div id="screen-menu" class="screen h-full">
+                <div class="pt-10 px-0 flex flex-col h-full overflow-y-auto">
+                    <div class="bg-white p-6 mb-4 shadow-sm relative">
+                        <button onclick="logout()" class="absolute top-4 right-4 text-xs font-bold text-slate-400 hover:text-slate-700">로그아웃</button>
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="relative w-16 h-16 cursor-pointer group" onclick="goToSubMenu('profile-edit')">
+                                <div class="w-full h-full rounded-full bg-slate-100 flex items-center justify-center text-3xl shadow-inner overflow-hidden">
+                                    <span id="profile-icon">😎</span>
+                                    <img id="profile-img" class="absolute inset-0 avatar-auto hidden" src="">
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h2 id="profile-name-display" class="text-xl font-bold text-slate-800">김대표님</h2>
+                                    <button onclick="goToSubMenu('profile-edit')" class="text-slate-400 hover:text-slate-800"><i class="fas fa-pen text-xs"></i></button>
+                                </div>
+                                <p class="text-xs text-slate-400 font-medium">Unfold Basic 회원</p>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-bold text-slate-800">내 코드</span>
+                                <div class="flex items-center gap-2">
+                                    <button id="referral-visibility-btn" onclick="toggleReferralVisibility()" class="text-xs font-bold text-slate-500 hover:text-slate-800">보기</button>
+                                    <button onclick="copyReferralCode()" class="text-xs font-bold text-emerald-600 hover:text-emerald-700">복사</button>
+                                </div>
+                            </div>
+                            <p id="referral-code-text" class="text-lg font-mono tracking-wider text-slate-900">********</p>
+                        </div>
+                        <button onclick="showToast('결제가 완료되었습니다. 프리미엄 회원으로 전환됩니다.')" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-sm py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 active:scale-95 transition-transform">멤버십 업그레이드</button>
+                    </div>
+                    <div class="bg-white p-4">
+                         <div onclick="goToSubMenu('coupons')" class="py-4 border-b border-slate-50 flex justify-between items-center text-slate-600 text-sm font-medium cursor-pointer hover:bg-slate-50 px-2 rounded"><span>🎫 내 쿠폰함</span><i class="fas fa-chevron-right text-slate-300"></i></div>
+                         <div onclick="goToSubMenu('payment')" class="py-4 border-b border-slate-50 flex justify-between items-center text-slate-600 text-sm font-medium cursor-pointer hover:bg-slate-50 px-2 rounded"><span>💳 결제 관리</span><i class="fas fa-chevron-right text-slate-300"></i></div>
+                         <div onclick="goToSubMenu('settings')" class="py-4 flex justify-between items-center text-slate-600 text-sm font-medium cursor-pointer hover:bg-slate-50 px-2 rounded"><span>⚙️ 설정</span><i class="fas fa-chevron-right text-slate-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        
+            <div id="screen-coupons" class="screen h-full">
+                <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                    <div class="mb-6 flex justify-between items-end"><h2 class="text-2xl font-bold text-slate-800">내 쿠폰함</h2><button onclick="backToMenu()" class="text-slate-400 text-sm font-bold">뒤로</button></div>
+                    <div id="coupon-list" class="space-y-3"></div>
+                </div>
+            </div>
+        
+            <div id="screen-payment" class="screen h-full">
+                <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                    <div class="mb-6 flex justify-between items-end"><h2 class="text-2xl font-bold text-slate-800">결제 관리</h2><button onclick="backToMenu()" class="text-slate-400 text-sm font-bold">뒤로</button></div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-4">
+                        <div class="flex justify-between mb-2"><span class="text-sm text-slate-500">다음 결제일</span><span class="text-sm font-bold text-slate-800">2023. 11. 25</span></div>
+                        <div class="flex justify-between items-center"><span class="text-lg font-bold text-slate-800">Unfold Premium</span><span class="text-emerald-600 font-bold">4,900원</span></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200"><h3 class="text-xs text-slate-400 font-bold mb-3">결제 수단</h3><div class="flex items-center gap-3"><div class="w-8 h-5 bg-yellow-400 rounded"></div><span class="text-sm text-slate-700">카카오페이</span><button class="ml-auto text-xs text-slate-400 underline">변경</button></div></div>
+                </div>
+            </div>
+        
+            <div id="screen-settings" class="screen h-full">
+                 <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                     <div class="mb-6 flex justify-between items-end"><h2 class="text-2xl font-bold text-slate-800">설정</h2><button onclick="backToMenu()" class="text-slate-400 text-sm font-bold">뒤로</button></div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 border-b border-slate-50 flex justify-between items-center">
+                            <span class="text-sm text-slate-700">알림 설정</span>
+                            <button type="button" onclick="toggleNotification()" class="w-10 h-6 rounded-full relative focus:outline-none">
+                                <div id="notif-track" class="w-full h-full rounded-full toggle-track transition-colors">
+                                    <div id="notif-knob" class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow toggle-knob transition-transform"></div>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="p-4 border-b border-slate-50 flex justify-between items-center">
+                            <span class="text-sm text-slate-700">앱 잠금 (PIN)</span>
+                            <button type="button" onclick="toggleAppPin()" class="w-10 h-6 rounded-full relative focus:outline-none">
+                                <div id="pin-track" class="w-full h-full rounded-full bg-slate-200 transition-colors">
+                                    <div id="pin-knob" class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform"></div>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="p-4 border-b border-slate-50 flex justify-between items-center">
+                            <span class="text-sm text-slate-700">생체 인증 사용</span>
+                            <button type="button" onclick="toggleBiometric()" class="w-10 h-6 rounded-full relative focus:outline-none" id="biometric-toggle">
+                                <div id="biometric-track" class="w-full h-full rounded-full bg-slate-200 transition-colors">
+                                    <div id="biometric-knob" class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform"></div>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="p-4 flex justify-between items-center">
+                            <span class="text-sm text-slate-700">다크 모드</span>
+                            <button type="button" onclick="toggleDarkMode()" class="w-10 h-6 rounded-full relative focus:outline-none" >
+                                <div id="dark-mode-track" class="w-full h-full rounded-full bg-slate-200 transition-colors">
+                                    <div id="dark-mode-knob" class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform"></div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 프로필 수정 화면 -->
+            <div id="screen-profile-edit" class="screen h-full">
+                <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                    <div class="mb-6 flex justify-between items-end">
+                        <h2 class="text-2xl font-bold text-slate-800">프로필 수정</h2>
+                        <button onclick="backToMenu()" class="text-slate-400 text-sm font-bold">취소</button>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center mb-6">
+                        <div class="relative w-24 h-24 mb-4">
+                            <div class="w-full h-full rounded-full bg-slate-100 flex items-center justify-center text-4xl shadow-inner overflow-hidden">
+                                <span id="edit-profile-icon">😎</span>
+                                <img id="edit-profile-img" class="absolute inset-0 avatar-auto hidden" src="">
+                            </div>
+                            
+                            <!-- 이모지 랜덤 변경 버튼 (오른쪽 하단) -->
+                            <button class="absolute -bottom-1 -right-1 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center border-2 border-white shadow-md active:scale-95 transition-transform z-10" onclick="changeProfileEmoji()">
+                                <i class="fas fa-dice text-white text-xs"></i>
+                            </button>
+                            <!-- 사진 업로드 버튼 (왼쪽 하단) -->
+                            <button class="absolute -bottom-1 -left-1 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center border-2 border-white shadow-md active:scale-95 transition-transform z-10" onclick="uploadProfileImage()">
+                                <i class="fas fa-camera text-white text-xs"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-400 font-bold mb-1">프로필 사진 변경</p>
+                        <input type="file" id="profile-upload-input" accept="image/*" class="hidden" onchange="handleProfileImageChange(this)">
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1.5">이름 (닉네임)</label>
+                            <input id="edit-profile-name" type="text" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white" placeholder="이름을 입력하세요">
+                        </div>
+                        
+                        <button onclick="saveProfile()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-200 active:scale-95 transition-transform mt-4">
+                            저장하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- 채팅 -->
+            <div id="screen-chat" class="screen h-full bg-white block">
+                <!-- py-3 제거: CSS에서 padding 제어 -->
+                <header class="chat-header">
+                    <button onclick="backToPrevFromChat()" class="text-slate-400 hover:text-slate-800 p-2"><i class="fas fa-arrow-left text-lg"></i></button>
+                    <div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border border-slate-100 flex items-center justify-center">
+                        <img id="chat-profile-img" src="" class="w-full h-full object-cover">
+                        <i id="chat-profile-icon" class="fas fa-robot text-white hidden"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="font-bold text-slate-800 text-sm" id="chat-name">변호사 이름</h3>
+                        <div class="flex items-center gap-1.5"><div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div><span class="text-[10px] text-slate-400 font-medium">상담 가능</span></div>
+                    </div>
+                </header>
+            
+                <main id="chat-body"></main>
+            
+                <!-- p-3 제거 및 CSS 제어로 변경 -->
+                <footer class="chat-input-area bg-white border-t border-slate-100 flex gap-2 items-center shadow-[0_-5px_20px_rgba(0,0,0,0.02)]">
+                    <button class="text-slate-400 p-2 hover:text-emerald-500 transition-colors"><i class="fas fa-plus"></i></button>
+                    <input id="chat-input" type="text" placeholder="메시지를 입력하세요..." class="flex-1 bg-slate-100 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button onclick="sendMessage()" class="bg-emerald-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:bg-emerald-600 transition-colors active:scale-95 flex-shrink-0"><i class="fas fa-paper-plane text-sm"></i></button>
+                </footer>
+            </div>
+        
+        </div>
+    
+        <div class="top-nav">
+            <button onclick="switchTab('home')" class="nav-item active" id="nav-home">
+                <i class="fas fa-home"></i><span>홈</span>
+            </button>
+            <button onclick="switchTab('case')" class="nav-item" id="nav-case">
+                <i class="fas fa-folder-open"></i><span>내 사건</span>
+            </button>
+            <button onclick="switchTab('expert')" class="nav-item" id="nav-expert">
+                <i class="fas fa-user-tie"></i><span>전문가</span>
+            </button>
+            <button onclick="switchTab('community')" class="nav-item" id="nav-community">
+                <i class="fas fa-comments"></i><span>고민상담</span>
+            </button>
+            <button onclick="switchTab('menu')" class="nav-item" id="nav-menu">
+                <i class="fas fa-bars"></i><span>메뉴</span>
+            </button>
+        </div>
+    
+    </div>
+
+<!-- OCR 전체보기 모달 -->
+<div id="ocr-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] hidden items-center justify-center px-6">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[80vh] overflow-hidden flex flex-col">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="fas fa-file-alt text-emerald-500"></i> OCR 전체보기</h3>
+            <button onclick="closeOcrModal()" class="text-slate-400 hover:text-slate-800 p-2"><i class="fas fa-times"></i></button>
+        </div>
+        <pre id="ocr-modal-text" class="text-[13px] text-slate-700 whitespace-pre-wrap break-words px-4 py-3 flex-1 overflow-auto"></pre>
+        <div class="px-4 py-3 border-t border-slate-100 flex justify-end">
+            <button onclick="closeOcrModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-bold">닫기</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 에뮬레이터에서 로컬 백엔드(3000)에 붙도록 기본값 지정
+    // 필요 시 실제 배포 API 주소로 덮어쓸 수 있음
+    window.APP_API_BASE_URL = "http://10.0.2.2:3000";
+</script>
+<script src="assets/app.js"></script></body>
+</html>
+
+

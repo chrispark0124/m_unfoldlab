@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#f8fafc"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="내 쿠폰함"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textColor="#0f172a"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="저장된 쿠폰을 확인하세요."
+        android:textSize="13sp"
+        android:textColor="#94a3b8"
+        android:layout_marginTop="4dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_card"
+        android:layout_marginTop="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="MOVE-2026"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="#0f172a"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="이삿짐 센터 5만원 할인"
+            android:textSize="13sp"
+            android:textColor="#475569"
+            android:layout_marginTop="2dp"/>
+    </LinearLayout>
+</LinearLayout>
+
+

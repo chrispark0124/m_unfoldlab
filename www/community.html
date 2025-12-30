@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Unfold - 고민상담</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #F1F5F9;
+            display: flex;
+            flex-direction: column;
+        }
+        .mobile-frame {
+            min-height: 100vh;
+            width: 100%;
+            background-color: #ffffff;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 65px;
+        }
+        .top-nav { 
+            height: 65px; background: white; border-top: 1px solid #E2E8F0; 
+            display: flex; justify-content: space-between; align-items: center; 
+            position: fixed; bottom: 0; left: 0; right: 0; max-width: 420px; margin: 0 auto;
+            z-index: 50; flex-shrink: 0; padding: 0 10px;
+        }
+        .nav-item { 
+            flex: 1; height: 100%; border: none; background: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            color: #94A3B8; font-size: 10px; font-weight: 500; cursor: pointer; 
+            -webkit-tap-highlight-color: transparent; gap: 4px;
+        }
+        .nav-item i { font-size: 18px; margin-bottom: 2px; }
+        .nav-item.active { color: #10B981; font-weight: 800; }
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+            background-color: #F8FAFC;
+            scroll-behavior: smooth;
+            display: flex;
+            flex-direction: column;
+        }
+        .content-area::-webkit-scrollbar { display: none; }
+        .write-btn {
+            position: absolute; bottom: 40px; right: 20px;
+            width: 56px; height: 56px; background-color: #1e293b; color: white;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(30, 41, 59, 0.3); z-index: 40;
+            transition: transform 0.2s; cursor: pointer;
+        }
+        .write-btn:active { transform: scale(0.9); }
+        .toast {
+            position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%);
+            background-color: rgba(15, 23, 42, 0.95); color: white;
+            padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;
+            display: none; z-index: 9999; white-space: nowrap;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+<div class="mobile-frame">
+    <div id="toast-msg" class="toast"><i class="fas fa-check-circle mr-2 text-emerald-400"></i><span id="toast-text">알림</span></div>
+
+    <!-- 하단 탭 -->
+    <div class="top-nav">
+        <button onclick="navigate('home')" class="nav-item" id="nav-home">
+            <i class="fas fa-home"></i><span>홈</span>
+        </button>
+        <button onclick="navigate('case')" class="nav-item" id="nav-case">
+            <i class="fas fa-folder-open"></i><span>내 사건</span>
+        </button>
+        <button onclick="navigate('expert')" class="nav-item" id="nav-expert">
+            <i class="fas fa-user-tie"></i><span>전문가</span>
+        </button>
+        <button onclick="navigate('community')" class="nav-item active" id="nav-community">
+            <i class="fas fa-comments"></i><span>고민상담</span>
+        </button>
+        <button onclick="navigate('menu')" class="nav-item" id="nav-menu">
+            <i class="fas fa-bars"></i><span>메뉴</span>
+        </button>
+    </div>
+
+    <div class="content-area">
+        <!-- 고민상담 메인 -->
+        <div id="screen-community" class="h-full bg-slate-50">
+            <div class="pt-6 pb-2 px-6 bg-white sticky top-0 z-10 border-b border-slate-100 shadow-sm flex items-end justify-between" style="height: 90px;">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">고민상담</h2>
+                    <p class="text-xs text-slate-500">법률 고민, 익명으로 다수에게 물어보세요!</p>
+                </div>
+                <button class="text-emerald-600 font-bold text-sm"><i class="fas fa-bell"></i></button>
+            </div>
+            
+            <div id="community-feed" class="p-4 space-y-4 overflow-y-auto pb-24 flex-1"></div>
+
+            <button onclick="openCommunityWrite()" class="write-btn">
+                <i class="fas fa-pen text-lg"></i>
+            </button>
+        </div>
+
+        <!-- 글쓰기 -->
+        <div id="screen-community-write" class="hidden h-full bg-slate-50">
+            <div class="pt-6 px-6 pb-4 bg-white border-b border-slate-100 flex items-center justify-between shadow-sm">
+                <button onclick="backToCommunityFromWrite()" class="text-slate-400 hover:text-slate-800 p-2 -ml-2">
+                    <i class="fas fa-arrow-left text-lg"></i>
+                </button>
+                <h2 class="text-sm font-bold text-slate-800">새 고민 올리기</h2>
+                <span class="w-8"></span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-6 pt-4 pb-24">
+                <div class="mb-4">
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1.5">제목</label>
+                    <input id="community-write-title" type="text" maxlength="60" placeholder="한 줄로 고민을 요약해 주세요" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1.5">상세 내용</label>
+                    <textarea id="community-write-content" rows="6" placeholder="언제, 어디서, 누구와 있었던 일인지 편하게 써 주세요. 실명이나 주민번호 등 민감한 정보는 적지 마세요." class="w-full border border-slate-200 rounded-2xl px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"></textarea>
+                    <p class="mt-1 text-[10px] text-slate-400 text-right">최대 1,000자까지 입력 가능 (샘플)</p>
+                </div>
+
+                <div class="mb-6 flex items-center justify-between bg-slate-100 rounded-2xl px-3 py-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-xs">익명</div>
+                        <div>
+                            <p class="text-[11px] font-bold text-slate-700">익명으로 올리기</p>
+                            <p class="text-[10px] text-slate-400">닉네임과 프로필만 노출돼요.</p>
+                        </div>
+                    </div>
+                    <button type="button" class="inline-flex items-center cursor-pointer" onclick="toggleCommunityAnon()">
+                        <div id="community-anon-track" class="w-9 h-5 rounded-full relative transition-colors">
+                            <div id="community-anon-knob" class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"></div>
+                        </div>
+                    </button>
+                </div>
+
+                <button onclick="submitCommunityWrite()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold py-3 rounded-xl shadow-md shadow-emerald-200 active:scale-95 transition-transform">
+                    고민 올리기
+                </button>
+            </div>
+        </div>
+
+        <!-- 상세 + 댓글 -->
+        <div id="screen-community-detail" class="hidden h-full bg-slate-50">
+            <div class="pt-6 px-6 pb-4 bg-white border-b border-slate-100 flex items-center justify-between shadow-sm">
+                <button onclick="backToCommunityFromDetail()" class="text-slate-400 hover:text-slate-800 p-2 -ml-2">
+                    <i class="fas fa-arrow-left text-lg"></i>
+                </button>
+                <h2 class="text-sm font-bold text-slate-800">고민상담</h2>
+                <span class="w-8"></span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-6 pt-4 pb-24 space-y-4">
+                <div id="community-detail-post" class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs">👤</div>
+                        <div>
+                            <p id="community-detail-user" class="text-xs font-bold text-slate-800">익명</p>
+                            <p id="community-detail-time" class="text-[10px] text-slate-400">방금 전</p>
+                        </div>
+                    </div>
+                    <h3 id="community-detail-title" class="font-bold text-slate-800 mb-1 text-sm"></h3>
+                    <p id="community-detail-content" class="text-xs text-slate-600 leading-relaxed mb-4 whitespace-pre-line"></p>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+                    <div class="px-4 py-3 border-b border-slate-50 flex items-center justify-between">
+                        <p class="text-xs font-bold text-slate-700">댓글 <span id="community-detail-comment-count">0</span>개</p>
+                    </div>
+                    <div id="community-comment-list" class="max-h-[320px] overflow-y-auto px-4 py-3 space-y-3"></div>
+                </div>
+            </div>
+
+            <div class="bg-white border-t border-slate-100 px-4 py-3 flex items-center gap-2 flex-shrink-0">
+                <input id="community-comment-input" type="text" placeholder="댓글을 입력해 주세요" class="flex-1 bg-slate-100 rounded-full px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <button onclick="submitCommunityComment()" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full active:scale-95 transition-transform">
+                    등록
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // SPA 기능 유지: 직접 접근 시 메인 index로 리다이렉트
+    if (window.location.pathname.toLowerCase().endsWith('community.html')) {
+        window.location.replace('index.html#community');
+    }
+
+    const communityPosts = [
+        {
+            user: "익명123", time: "10분 전", title: "전세 보증금 안 돌려주는데 이거 신고 가능한가요?",
+            content: "계약 만료 3개월 전부터 말했는데 집주인이 연락을 피해요... 내용증명 보내면 해결되나요?",
+            voteTitle: "내용증명 보낼까요?", leftLabel: "보낸다", leftPct: 80, rightLabel: "기다린다", rightPct: 20,
+            likes: 12,
+            commentList: [
+                { user: "법률도우미", time: "5분 전", text: "내용증명부터 보내 보시는 게 좋습니다. 그래도 안 되면 지급명령이나 소송도 고려해 보세요." },
+                { user: "익명456", time: "방금 전", text: "저도 비슷한 상황인데 내용증명 후에 바로 연락 오더라고요." }
+            ]
+        },
+        {
+            user: "고민많은직장인", time: "1시간 전", title: "중고거래 사기 당한 것 같습니다 ㅠㅠ",
+            content: "입금했는데 물건도 안 보내고 잠수 탔어요. 소액인데 경찰서 가면 받아주나요?",
+            voteTitle: "신고 가능?", leftLabel: "가능", leftPct: 95, rightLabel: "힘듦", rightPct: 5,
+            likes: 45,
+            commentList: [
+                { user: "형사전문", time: "45분 전", text: "금액과 상관 없이 사기는 범죄라서, 캡처 정리해서 사이버수사대에 신고해 보세요." }
+            ]
+        }
+    ];
+
+    let currentCommunityPostIndex = null;
+    let communityAnonEnabled = true;
+
+    function navigate(tab) {
+        if (tab === 'home') window.location.href = 'index.html';
+        else if (tab === 'case') window.location.href = 'case.html';
+        else if (tab === 'expert') window.location.href = 'expert.html';
+        else if (tab === 'community') window.location.href = 'community.html';
+        else if (tab === 'menu') window.location.href = 'menu.html';
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast-msg');
+        document.getElementById('toast-text').innerText = msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 2000);
+    }
+
+    function renderCommunity() {
+        const feed = document.getElementById('community-feed');
+        feed.innerHTML = '';
+        communityPosts.forEach((post, index) => {
+            post.comments = post.commentList.length;
+            feed.innerHTML += `
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs">👤</div>
+                    <div><p class="text-xs font-bold text-slate-800">${post.user}</p><p class="text-[10px] text-slate-400">${post.time}</p></div>
+                </div>
+                <h3 class="font-bold text-slate-800 mb-1">${post.title}</h3>
+                <p class="text-xs text-slate-600 leading-relaxed mb-4">${post.content}</p>
+                
+                <div class="bg-slate-50 p-3 rounded-xl mb-3">
+                    <p class="text-[10px] text-slate-500 font-bold mb-2 text-center">🗳️ ${post.voteTitle}</p>
+                    <div class="flex items-center gap-2 text-[10px] font-bold text-slate-600 mb-1">
+                        <span>${post.leftLabel}</span>
+                        <span class="ml-auto">${post.rightLabel}</span>
+                    </div>
+                    <div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden flex">
+                        <div class="h-full bg-emerald-400" style="width: ${post.leftPct}%"></div>
+                        <div class="h-full bg-red-400" style="width: ${post.rightPct}%"></div>
+                    </div>
+                    <div class="flex justify-between text-[9px] text-slate-400 mt-1">
+                        <span>${post.leftPct}%</span>
+                        <span>${post.rightPct}%</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 text-xs text-slate-400 border-t border-slate-50 pt-3">
+                    <button class="flex items-center gap-1 hover:text-red-500" onclick="toggleLike(${index})">
+                        <i class="far fa-heart" id="like-icon-${index}"></i>
+                        <span id="like-count-${index}">${post.likes}</span>
+                    </button>
+                    <button class="flex items-center gap-1 hover:text-blue-500" onclick="openCommunityDetail(${index})">
+                        <i class="far fa-comment"></i>
+                        <span id="comment-count-${index}">${post.comments}</span>
+                    </button>
+                    <button class="ml-auto" onclick="shareCommunityPost(${index})">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                </div>
+            </div>`;
+        });
+    }
+
+    function toggleLike(index) {
+        const post = communityPosts[index];
+        const likeIcon = document.getElementById(`like-icon-${index}`);
+        const likeCount = document.getElementById(`like-count-${index}`);
+
+        if (likeIcon.classList.contains('far')) {
+            likeIcon.classList.remove('far');
+            likeIcon.classList.add('fas', 'text-red-500');
+            post.likes++;
+        } else {
+            likeIcon.classList.remove('fas', 'text-red-500');
+            likeIcon.classList.add('far');
+            post.likes--;
+        }
+        likeCount.innerText = post.likes;
+    }
+
+    // 고민 공유
+    async function shareCommunityPost(index) {
+        const post = communityPosts[index];
+        if (!post) return;
+
+        const shareText = `[고민 공유]\n${post.title}\n\n${post.content}`;
+
+        try {
+            // Web Share API가 있으면 기본 공유 시트 사용
+            if (navigator.share) {
+                await navigator.share({
+                    title: post.title,
+                    text: shareText
+                });
+            } else {
+                // 없으면 텍스트만 클립보드로 복사
+                await navigator.clipboard.writeText(shareText);
+                showToast('고민 내용이 복사되었습니다. 원하는 곳에 붙여넣기 하세요.');
+            }
+        } catch (err) {
+            console.error('공유 중 오류:', err);
+            showToast('공유 중 오류가 발생했습니다.');
+        }
+    }
+
+    function updateCommunityAnonUI() {
+        const track = document.getElementById('community-anon-track');
+        const knob = document.getElementById('community-anon-knob');
+        if (!track || !knob) return;
+
+        if (communityAnonEnabled) {
+            track.style.backgroundColor = '#10B981';
+            knob.style.transform = 'translateX(16px)';
+        } else {
+            track.style.backgroundColor = '#CBD5E1';
+            knob.style.transform = 'translateX(0px)';
+        }
+    }
+
+    function toggleCommunityAnon() {
+        communityAnonEnabled = !communityAnonEnabled;
+        updateCommunityAnonUI();
+    }
+
+    function openCommunityWrite() {
+        document.getElementById('screen-community').classList.add('hidden');
+        document.getElementById('screen-community-write').classList.remove('hidden');
+    }
+
+    function backToCommunityFromWrite() {
+        document.getElementById('screen-community-write').classList.add('hidden');
+        document.getElementById('screen-community').classList.remove('hidden');
+        renderCommunity();
+    }
+
+    function submitCommunityWrite() {
+        const title = document.getElementById('community-write-title')?.value.trim();
+        const content = document.getElementById('community-write-content')?.value.trim();
+        if (!title || !content) {
+            showToast('제목과 내용을 모두 입력해주세요.');
+            return;
+        }
+        communityPosts.unshift({
+            user: communityAnonEnabled ? '익명' : '로그인 유저',
+            time: '방금 전',
+            title,
+            content,
+            voteTitle: '도움 되었나요?',
+            leftLabel: '도움 됨',
+            leftPct: 100,
+            rightLabel: '아직 모르겠음',
+            rightPct: 0,
+            likes: 0,
+            commentList: []
+        });
+        document.getElementById('community-write-title').value = '';
+        document.getElementById('community-write-content').value = '';
+        backToCommunityFromWrite();
+        showToast('고민이 등록되었습니다.');
+    }
+
+    function openCommunityDetail(index) {
+        currentCommunityPostIndex = index;
+        const post = communityPosts[index];
+
+        document.getElementById('screen-community').classList.add('hidden');
+        document.getElementById('screen-community-write').classList.add('hidden');
+        document.getElementById('screen-community-detail').classList.remove('hidden');
+
+        document.getElementById('community-detail-user').innerText = post.user;
+        document.getElementById('community-detail-time').innerText = post.time;
+        document.getElementById('community-detail-title').innerText = post.title;
+        document.getElementById('community-detail-content').innerText = post.content;
+
+        renderCommunityComments();
+    }
+
+    function renderCommunityComments() {
+        if (currentCommunityPostIndex === null) return;
+        const post = communityPosts[currentCommunityPostIndex];
+        const listEl = document.getElementById('community-comment-list');
+        const countEl = document.getElementById('community-detail-comment-count');
+        listEl.innerHTML = '';
+        post.commentList.forEach(c => {
+            listEl.innerHTML += `
+                <div class="flex items-start gap-2">
+                    <div class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[11px]">익명</div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <p class="text-[11px] font-bold text-slate-700">${c.user}</p>
+                            <span class="text-[10px] text-slate-400">${c.time}</span>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line">${c.text}</p>
+                    </div>
+                </div>
+            `;
+        });
+        post.comments = post.commentList.length;
+        countEl.innerText = post.comments;
+        const countSpan = document.getElementById(`comment-count-${currentCommunityPostIndex}`);
+        if (countSpan) countSpan.innerText = post.comments;
+    }
+
+    function backToCommunityFromDetail() {
+        document.getElementById('screen-community-detail').classList.add('hidden');
+        document.getElementById('screen-community').classList.remove('hidden');
+        renderCommunity();
+    }
+
+    function submitCommunityComment() {
+        if (currentCommunityPostIndex === null) return;
+        const input = document.getElementById('community-comment-input');
+        const text = input.value.trim();
+        if (!text) return;
+        const post = communityPosts[currentCommunityPostIndex];
+        post.commentList.push({ user: '익명', time: '방금 전', text });
+        input.value = '';
+        renderCommunityComments();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderCommunity();
+        updateCommunityAnonUI();
+    });
+</script>
+
+</body>
+</html>
+
+
+

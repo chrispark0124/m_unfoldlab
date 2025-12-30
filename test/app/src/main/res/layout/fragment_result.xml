@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@color/slate_50">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="위험 감지"
+        android:textColor="#ef4444"
+        android:textStyle="bold"
+        android:textSize="13sp"
+        android:background="#fee2e2"
+        android:padding="6dp"
+        android:layout_marginBottom="12dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="계약금 떼일 수 있어요"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:textColor="#0f172a"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="특약 조항 2건이 세입자에게 불리합니다."
+        android:textSize="14sp"
+        android:textColor="#475569"
+        android:layout_marginTop="4dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_card_round"
+        android:layout_marginTop="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="FACT CHECK"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#64748b"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="• 원상복구 의무 모호 — 자연 마모까지 청구될 위험"
+            android:textSize="13sp"
+            android:textColor="#0f172a"
+            android:layout_marginBottom="6dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="• 특약 사항 누락 — 근저당권 말소 조항 없음"
+            android:textSize="13sp"
+            android:textColor="#0f172a"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_card_round"
+        android:layout_marginTop="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="AI SOLUTION"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#0f172a"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1) 특약 수정 요청 보내기\n2) 표준 계약서 다운로드\n3) AI에게 물어보기"
+            android:textSize="13sp"
+            android:textColor="#0f172a"/>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btn_result_to_recommend"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Top 5 변호사 매칭"
+        android:backgroundTint="@color/nav_bg_dark"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        android:layout_marginTop="20dp"/>
+
+</LinearLayout>
+
+

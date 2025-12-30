@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/slate_50">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AI 추천 전문가"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:textColor="#0f172a"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="해당 분야 상위 5명입니다."
+        android:textSize="13sp"
+        android:textColor="@color/slate_500"
+        android:layout_marginTop="4dp"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recommend_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingTop="8dp"
+        android:clipToPadding="false"/>
+
+    <Button
+        android:id="@+id/btn_rec_close"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="닫기"
+        android:backgroundTint="@color/slate_100"
+        android:textColor="@color/text_primary"/>
+</LinearLayout>
+
+

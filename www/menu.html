@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Unfold - 메뉴</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #F1F5F9;
+            display: flex;
+            flex-direction: column;
+        }
+        .mobile-frame {
+            min-height: 100vh;
+            width: 100%;
+            background-color: #ffffff;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 65px;
+        }
+        .top-nav { 
+            height: 65px; background: white; border-top: 1px solid #E2E8F0; 
+            display: flex; justify-content: space-between; align-items: center; 
+            position: fixed; bottom: 0; left: 0; right: 0; max-width: 420px; margin: 0 auto;
+            z-index: 50; flex-shrink: 0; padding: 0 10px;
+        }
+        .nav-item { 
+            flex: 1; height: 100%; border: none; background: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            color: #94A3B8; font-size: 10px; font-weight: 500; cursor: pointer; 
+            -webkit-tap-highlight-color: transparent; gap: 4px;
+        }
+        .nav-item i { font-size: 18px; margin-bottom: 2px; }
+        .nav-item.active { color: #10B981; font-weight: 800; }
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+            background-color: #F8FAFC;
+            scroll-behavior: smooth;
+            display: flex;
+            flex-direction: column;
+        }
+        .content-area::-webkit-scrollbar { display: none; }
+        .toast {
+            position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%);
+            background-color: rgba(15, 23, 42, 0.95); color: white;
+            padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;
+            display: none; z-index: 9999; white-space: nowrap;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        /* 프로필 이미지 원형 자동 크롭 */
+        .avatar-auto {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="mobile-frame">
+    <div id="toast-msg" class="toast"><i class="fas fa-check-circle mr-2 text-emerald-400"></i><span id="toast-text">알림</span></div>
+
+    <!-- 하단 탭 -->
+    <div class="top-nav">
+        <button onclick="navigate('home')" class="nav-item" id="nav-home">
+            <i class="fas fa-home"></i><span>홈</span>
+        </button>
+        <button onclick="navigate('case')" class="nav-item" id="nav-case">
+            <i class="fas fa-folder-open"></i><span>내 사건</span>
+        </button>
+        <button onclick="navigate('expert')" class="nav-item" id="nav-expert">
+            <i class="fas fa-user-tie"></i><span>전문가</span>
+        </button>
+        <button onclick="navigate('community')" class="nav-item" id="nav-community">
+            <i class="fas fa-comments"></i><span>고민상담</span>
+        </button>
+        <button onclick="navigate('menu')" class="nav-item active" id="nav-menu">
+            <i class="fas fa-bars"></i><span>메뉴</span>
+        </button>
+    </div>
+
+    <div class="content-area">
+        <!-- 메뉴 메인 -->
+        <div id="screen-menu" class="h-full">
+            <div class="pt-6 px-0 flex flex-col h-full overflow-y-auto">
+                <div class="bg-white p-6 mb-4 shadow-sm relative">
+                    <button onclick="logout()" class="absolute top-4 right-4 text-xs font-bold text-slate-400 hover:text-slate-700">로그아웃</button>
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-3xl shadow-inner overflow-hidden">
+                            <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?fit=crop&w=200&h=200" alt="프로필" class="avatar-auto">
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800">김대표님</h2>
+                            <p class="text-xs text-slate-400 font-medium">Unfold Basic 회원</p>
+                        </div>
+                    </div>
+                    <button onclick="showToast('결제가 완료되었습니다. 프리미엄 회원으로 전환됩니다.')" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-sm py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 active:scale-95 transition-transform">멤버십 업그레이드</button>
+                </div>
+                <div class="bg-white p-4">
+                     <div onclick="goToSubMenu('coupons')" class="py-4 border-b border-slate-50 flex justify-between items-center text-slate-600 text-sm font-medium cursor-pointer hover:bg-slate-50 px-2 rounded">
+                        <span>🎫 내 쿠폰함</span><i class="fas fa-chevron-right text-slate-300"></i>
+                    </div>
+                     <div onclick="goToSubMenu('payment')" class="py-4 border-b border-slate-50 flex justify-between items-center text-slate-600 text-sm font-medium cursor-pointer hover:bg-slate-50 px-2 rounded">
+                        <span>💳 결제 관리</span><i class="fas fa-chevron-right text-slate-300"></i>
+                    </div>
+                     <div onclick="goToSubMenu('settings')" class="py-4 flex justify-between items-center text-slate-600 text-sm font-medium cursor-pointer hover:bg-slate-50 px-2 rounded">
+                        <span>⚙️ 설정</span><i class="fas fa-chevron-right text-slate-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 쿠폰함 -->
+        <div id="screen-coupons" class="hidden h-full">
+            <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                <div class="mb-6 flex justify-between items-end">
+                    <h2 class="text-2xl font-bold text-slate-800">내 쿠폰함</h2>
+                    <button onclick="backToMenu()" class="text-slate-400 text-sm font-bold">뒤로</button>
+                </div>
+                <div id="coupon-list" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <!-- 결제 관리 -->
+        <div id="screen-payment" class="hidden h-full">
+            <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                <div class="mb-6 flex justify-between items-end">
+                    <h2 class="text-2xl font-bold text-slate-800">결제 관리</h2>
+                    <button onclick="backToMenu()" class="text-slate-400 text-sm font-bold">뒤로</button>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-4">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-sm text-slate-500">다음 결제일</span>
+                        <span class="text-sm font-bold text-slate-800">2023. 11. 25</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-lg font-bold text-slate-800">Unfold Premium</span>
+                        <span class="text-emerald-600 font-bold">4,900원</span>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="text-xs text-slate-400 font-bold mb-3">결제 수단</h3>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-5 bg-yellow-400 rounded"></div>
+                        <span class="text-sm text-slate-700">카카오페이</span>
+                        <button class="ml-auto text-xs text-slate-400 underline">변경</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 설정 -->
+        <div id="screen-settings" class="hidden h-full">
+             <div class="pt-20 px-6 flex flex-col h-full overflow-y-auto">
+                 <div class="mb-6 flex justify-between items-end">
+                    <h2 class="text-2xl font-bold text-slate-800">설정</h2>
+                    <button onclick="backToMenu()" class="text-slate-400 text-sm font-bold">뒤로</button>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 border-b border-slate-50 flex justify-between items-center">
+                        <span class="text-sm text-slate-700">알림 설정</span>
+                        <div class="w-10 h-6 bg-emerald-500 rounded-full relative">
+                            <div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+                        </div>
+                    </div>
+                    <div class="p-4 border-b border-slate-50 flex justify-between items-center">
+                        <span class="text-sm text-slate-700">생체 인증 사용</span>
+                        <div class="w-10 h-6 bg-slate-200 rounded-full relative">
+                            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+                        </div>
+                    </div>
+                    <div class="p-4 flex justify-between items-center">
+                        <span class="text-sm text-slate-700">다크 모드</span>
+                        <div class="w-10 h-6 bg-slate-200 rounded-full relative">
+                            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const savedCoupons = [];
+
+    function navigate(tab) {
+        if (tab === 'home') window.location.href = 'index.html';
+        else if (tab === 'case') window.location.href = 'case.html';
+        else if (tab === 'expert') window.location.href = 'expert.html';
+        else if (tab === 'community') window.location.href = 'community.html';
+        else if (tab === 'menu') window.location.href = 'menu.html';
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast-msg');
+        document.getElementById('toast-text').innerText = msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 2000);
+    }
+
+    function goToSubMenu(page) {
+        document.getElementById('screen-menu').classList.add('hidden');
+        document.getElementById('screen-coupons').classList.add('hidden');
+        document.getElementById('screen-payment').classList.add('hidden');
+        document.getElementById('screen-settings').classList.add('hidden');
+        document.getElementById('screen-' + page).classList.remove('hidden');
+        if (page === 'coupons') renderCoupons();
+    }
+
+    function backToMenu() {
+        document.getElementById('screen-coupons').classList.add('hidden');
+        document.getElementById('screen-payment').classList.add('hidden');
+        document.getElementById('screen-settings').classList.add('hidden');
+        document.getElementById('screen-menu').classList.remove('hidden');
+    }
+
+    function renderCoupons() {
+        const list = document.getElementById('coupon-list');
+        list.innerHTML = '';
+        if(savedCoupons.length === 0) {
+            list.innerHTML = `<div class="text-center text-slate-400 mt-10 text-sm">저장된 쿠폰이 없습니다.</div>`;
+            return;
+        }
+        savedCoupons.forEach(c => {
+            list.innerHTML += `
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-slate-800">${c.title}</h3>
+                    <p class="text-xs text-slate-500">${c.desc}</p>
+                </div>
+                <div class="text-right">
+                    <span class="block text-indigo-600 font-bold text-lg">${c.code}</span>
+                    <span class="text-[10px] text-slate-400">2024.12.31 만료</span>
+                </div>
+            </div>`;
+        });
+    }
+
+    function logout() {
+        window.location.href = 'auth.html';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // 초기 쿠폰 샘플 하나 추가
+        savedCoupons.push({ title: "웰컴 쿠폰", desc: "신규 가입 1만원 할인", code: "WELCOME-10K" });
+    });
+</script>
+
+</body>
+</html>
+
+
+

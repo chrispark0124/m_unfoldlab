@@ -1,0 +1,12 @@
+{
+  "appId": "com.unfold.app",
+  "appName": "UnfoldApp",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "http",
+    "allowNavigation": [
+      "http://10.0.2.2:3000",
+      "http://localhost:3000"
+    ]
+  }
+}

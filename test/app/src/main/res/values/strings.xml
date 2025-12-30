@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">My Application</string>
+    <string name="nav_home">홈</string>
+    <string name="nav_cases">케이스</string>
+    <string name="nav_expert">전문가</string>
+    <string name="nav_community">커뮤니티</string>
+    <string name="nav_menu">메뉴</string>
+</resources>
