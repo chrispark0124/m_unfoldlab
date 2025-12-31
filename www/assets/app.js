@@ -395,6 +395,30 @@
         return appLockOverlay;
     }
 
+    // server.js 상단
+    const cors = require('cors');
+    
+    // CORS 설정을 아래와 같이 구체적으로 변경합니다.
+    app.use(cors({
+        origin: [
+            'https://munfoldlab.com',
+            'http://localhost',      // 안드로이드 Capacitor 기본 주소
+            'http://localhost:3000',
+            'http://127.0.0.1'
+        ],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: true
+    }));
+    
+    // 모든 응답에 JSON 헤더 강제 (HTML 에러 방지)
+    app.use((req, res, next) => {
+        if (req.path.startsWith('/api/')) {
+            res.setHeader('Content-Type', 'application/json');
+        }
+        next();
+    });
+
     let appLockCaptureBypassUntil = 0; // 카메라/파일 업로드 중 복귀 잠금 무시용
 
     function beginCaptureBypass(ms = 120000) {
