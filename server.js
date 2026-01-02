@@ -100,12 +100,12 @@ async function loadSecretsIfNeeded() {
         process.env.GOOGLE_API_KEY &&
         process.env.GCP_VISION_SA
     );
-    if (!needs) return;
+    // 하나라도 비어 있으면 Secrets 로드 시도
     try {
         const data = await secretsClient.send(new GetSecretValueCommand({ SecretId: SECRET_NAME }));
         const parsed = JSON.parse(data.SecretString || '{}');
         Object.entries(parsed).forEach(([k, v]) => {
-            if (!process.env[k]) process.env[k] = v;
+            if (!process.env[k] || `${process.env[k]}`.trim() === '') process.env[k] = v;
         });
         // Vision API 키 별칭 처리
         const visionKey =
@@ -267,6 +267,11 @@ async function initDb() {
         console.log('🔑 GOOGLE_API_KEY 로드됨:', masked);
     } else {
         console.warn('⚠️ GOOGLE_API_KEY 미설정');
+    }
+    if (process.env.GCP_VISION_SA) {
+        console.log('🔑 GCP_VISION_SA 로드됨 (masking)');
+    } else {
+        console.warn('⚠️ GCP_VISION_SA 미설정');
     }
     const uri = process.env.MONGODB_URI;
     if (!uri) throw new Error('MONGODB_URI 가 설정되지 않았습니다.');
@@ -645,7 +650,8 @@ app.get('/api/experts', async (_req, res) => {
 // OCR (Google Vision)
 app.post('/api/ocr/vision', async (req, res) => {
     try {
-        const base64 = (req.body?.imageBase64 || '').trim();
+        const raw = (req.body?.imageBase64 || '');
+        const base64 = (typeof raw === 'string' ? raw : '').trim();
         if (!base64) return res.status(400).json({ message: 'imageBase64 필요' });
 
         const payload = {
