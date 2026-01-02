@@ -657,13 +657,7 @@ app.post('/api/ocr/vision', async (req, res) => {
         };
 
         let resp;
-        if (GOOGLE_API_KEY) {
-            resp = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_API_KEY}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-        } else {
+        if (GCP_VISION_SA) {
             const token = await getVisionAccessToken();
             resp = await fetch('https://vision.googleapis.com/v1/images:annotate', {
                 method: 'POST',
@@ -673,6 +667,14 @@ app.post('/api/ocr/vision', async (req, res) => {
                 },
                 body: JSON.stringify(payload)
             });
+        } else if (GOOGLE_API_KEY) {
+            resp = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        } else {
+            return res.status(500).json({ message: 'GOOGLE_API_KEY 미설정 (또는 GCP_VISION_SA 미설정)' });
         }
 
         if (!resp.ok) {
