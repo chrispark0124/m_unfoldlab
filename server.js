@@ -187,6 +187,13 @@ async function backfillUsers() {
 
 async function initDb() {
     await loadSecretsIfNeeded();
+    const key = process.env.GOOGLE_API_KEY || process.env.GOOGLE_VISION_API_KEY;
+    if (key) {
+        const masked = `${key.slice(0, 6)}...${key.slice(-4)}`;
+        console.log('🔑 GOOGLE_API_KEY 로드됨:', masked);
+    } else {
+        console.warn('⚠️ GOOGLE_API_KEY 미설정');
+    }
     const uri = process.env.MONGODB_URI;
     if (!uri) throw new Error('MONGODB_URI 가 설정되지 않았습니다.');
     // 인증 전용 커넥션 (m_application)
