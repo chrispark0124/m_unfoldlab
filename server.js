@@ -14,8 +14,8 @@ const PORT = process.env.PORT || 3000;
 const AUTH_DB = process.env.MONGO_DB_AUTH || process.env.MONGO_DB || 'm_application';
 // 커뮤니티 등 앱 데이터 DB (기본: 인증 DB와 동일, 필요 시 override)
 const APP_DB = process.env.MONGO_DB_APP || AUTH_DB || 'm_application';
-// 전문가 프로필 DB (기본: 인증 DB와 동일하게 m_application 사용)
-const EXPERT_DB = process.env.MONGO_DB_EXPERT || AUTH_DB || 'm_application';
+// 전문가 프로필 DB (요청: Cluster0/legalai_pro/users)
+const EXPERT_DB = process.env.MONGO_DB_EXPERT || 'legalai_pro';
 const AWS_REGION = process.env.AWS_REGION || 'ap-northeast-2';
 const SECRET_NAME = process.env.AWS_SECRETS_NAME || 'munfoldlab/prod/runtime';
 const DEFAULT_PROFILE_IMAGE = process.env.DEFAULT_PROFILE_IMAGE || '';
