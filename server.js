@@ -56,7 +56,8 @@ async function getVisionAccessToken() {
     } catch (e) {
         throw new Error('GCP_VISION_SA 파싱 실패');
     }
-    const { client_email, private_key } = sa;
+    const { client_email } = sa;
+const private_key = (sa.private_key || '').replace(/\\n/g, '\n').replace(/\r/g, '\n'); // \n 이스케이프 처리
     if (!client_email || !private_key) throw new Error('GCP_VISION_SA에 client_email/private_key 없음');
 
     const header = { alg: 'RS256', typ: 'JWT' };
@@ -651,11 +652,18 @@ app.get('/api/experts', async (_req, res) => {
 app.post('/api/ocr/vision', async (req, res) => {
     try {
         const raw = req.body?.imageBase64;
-        const base64 = (() => {
-            if (typeof raw === 'string') return raw.trim();
-            if (raw === undefined || raw === null) return '';
-            return String(raw).trim();
-        })();
+        let base64 = '';
+        if (typeof raw === 'string') {
+            base64 = raw.trim();
+        } else if (raw === undefined || raw === null) {
+            base64 = '';
+        } else if (typeof raw?.trim === 'function') {
+            base64 = raw.trim();
+        } else {
+            base64 = String(raw);
+        }
+        // data URL 접두어 제거
+        base64 = base64.replace(/^data:[^;]+;base64,/, '');
         if (!base64) return res.status(400).json({ message: 'imageBase64 필요' });
 
         const payload = {
@@ -698,7 +706,8 @@ app.post('/api/ocr/vision', async (req, res) => {
 
         const data = await resp.json();
         const r = data?.responses?.[0] || {};
-        const plain = (r.fullTextAnnotation?.text || r.textAnnotations?.[0]?.description || '').trim();
+        const plainRaw = r.fullTextAnnotation?.text || (Array.isArray(r.textAnnotations) && r.textAnnotations.length > 0 && r.textAnnotations[0].description) || '';
+        const plain = (typeof plainRaw === 'string' ? plainRaw : String(plainRaw || '')).trim();
 
         // 간단히 fullText를 모두 반환. orderedText/blockOrderedText는 동일 값으로 전달
         res.json({
