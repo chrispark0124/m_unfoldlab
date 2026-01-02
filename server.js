@@ -94,9 +94,13 @@ async function getVisionAccessToken() {
 // --------- Secrets Manager (옵션) ---------
 const secretsClient = new SecretsManagerClient({ region: AWS_REGION });
 async function loadSecretsIfNeeded() {
-    const needsMongo = !process.env.MONGODB_URI;
-    const needsVision = !process.env.GOOGLE_API_KEY;
-    if (!needsMongo && !needsVision) return;
+    // Mongo / Vision(API 키) / Vision(서비스계정) 중 하나라도 없으면 Secrets 로드
+    const needs = !(
+        process.env.MONGODB_URI &&
+        process.env.GOOGLE_API_KEY &&
+        process.env.GCP_VISION_SA
+    );
+    if (!needs) return;
     try {
         const data = await secretsClient.send(new GetSecretValueCommand({ SecretId: SECRET_NAME }));
         const parsed = JSON.parse(data.SecretString || '{}');
