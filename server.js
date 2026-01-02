@@ -20,6 +20,76 @@ const AWS_REGION = process.env.AWS_REGION || 'ap-northeast-2';
 const SECRET_NAME = process.env.AWS_SECRETS_NAME || 'munfoldlab/prod/runtime';
 const DEFAULT_PROFILE_IMAGE = process.env.DEFAULT_PROFILE_IMAGE || '';
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || process.env.GOOGLE_VISION_API_KEY || '';
+const GCP_VISION_SA = process.env.GCP_VISION_SA || '';
+
+// ------- Google Vision SA 토큰 캐시 -------
+let cachedVisionToken = { token: null, exp: 0 };
+
+function base64Url(input) {
+    return Buffer.from(input)
+        .toString('base64')
+        .replace(/=/g, '')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_');
+}
+
+async function getVisionAccessToken() {
+    if (GOOGLE_API_KEY) return null; // 키가 있으면 토큰 불필요
+    const now = Math.floor(Date.now() / 1000);
+    if (cachedVisionToken.token && cachedVisionToken.exp - 60 > now) {
+        return cachedVisionToken.token;
+    }
+    if (!GCP_VISION_SA) throw new Error('GCP_VISION_SA 미설정');
+
+    // GCP_VISION_SA가 base64로 올 수도 있으니 우선 복호화 시도
+    let saJson = GCP_VISION_SA;
+    try {
+        const decoded = Buffer.from(GCP_VISION_SA, 'base64').toString('utf8');
+        if (decoded.includes('client_email') && decoded.includes('private_key')) {
+            saJson = decoded;
+        }
+    } catch (_e) {}
+
+    let sa;
+    try {
+        sa = JSON.parse(saJson);
+    } catch (e) {
+        throw new Error('GCP_VISION_SA 파싱 실패');
+    }
+    const { client_email, private_key } = sa;
+    if (!client_email || !private_key) throw new Error('GCP_VISION_SA에 client_email/private_key 없음');
+
+    const header = { alg: 'RS256', typ: 'JWT' };
+    const payload = {
+        iss: client_email,
+        scope: 'https://www.googleapis.com/auth/cloud-platform',
+        aud: 'https://oauth2.googleapis.com/token',
+        exp: now + 3600,
+        iat: now
+    };
+    const unsigned = `${base64Url(JSON.stringify(header))}.${base64Url(JSON.stringify(payload))}`;
+    const sign = require('crypto').createSign('RSA-SHA256');
+    sign.update(unsigned);
+    const signature = base64Url(sign.sign(private_key));
+    const assertion = `${unsigned}.${signature}`;
+
+    const resp = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+            assertion
+        })
+    });
+    if (!resp.ok) {
+        const txt = await resp.text().catch(() => '');
+        throw new Error(`Vision token error ${resp.status} ${txt.slice(0, 200)}`);
+    }
+    const data = await resp.json();
+    if (!data.access_token) throw new Error('Vision token 응답에 access_token 없음');
+    cachedVisionToken = { token: data.access_token, exp: now + (data.expires_in || 3600) };
+    return data.access_token;
+}
 
 // --------- Secrets Manager (옵션) ---------
 const secretsClient = new SecretsManagerClient({ region: AWS_REGION });
@@ -571,9 +641,6 @@ app.get('/api/experts', async (_req, res) => {
 // OCR (Google Vision)
 app.post('/api/ocr/vision', async (req, res) => {
     try {
-        if (!GOOGLE_API_KEY) {
-            return res.status(500).json({ message: 'GOOGLE_API_KEY 미설정' });
-        }
         const base64 = (req.body?.imageBase64 || '').trim();
         if (!base64) return res.status(400).json({ message: 'imageBase64 필요' });
 
@@ -589,11 +656,24 @@ app.post('/api/ocr/vision', async (req, res) => {
             ]
         };
 
-        const resp = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        let resp;
+        if (GOOGLE_API_KEY) {
+            resp = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        } else {
+            const token = await getVisionAccessToken();
+            resp = await fetch('https://vision.googleapis.com/v1/images:annotate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+        }
 
         if (!resp.ok) {
             const txt = await resp.text().catch(() => '');
