@@ -650,8 +650,12 @@ app.get('/api/experts', async (_req, res) => {
 // OCR (Google Vision)
 app.post('/api/ocr/vision', async (req, res) => {
     try {
-        const raw = (req.body?.imageBase64 || '');
-        const base64 = (typeof raw === 'string' ? raw : '').trim();
+        const raw = req.body?.imageBase64;
+        const base64 = (() => {
+            if (typeof raw === 'string') return raw.trim();
+            if (raw === undefined || raw === null) return '';
+            return String(raw).trim();
+        })();
         if (!base64) return res.status(400).json({ message: 'imageBase64 필요' });
 
         const payload = {
