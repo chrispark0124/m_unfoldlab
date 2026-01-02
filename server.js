@@ -19,17 +19,29 @@ const EXPERT_DB = process.env.MONGO_DB_EXPERT || 'legalai_pro';
 const AWS_REGION = process.env.AWS_REGION || 'ap-northeast-2';
 const SECRET_NAME = process.env.AWS_SECRETS_NAME || 'munfoldlab/prod/runtime';
 const DEFAULT_PROFILE_IMAGE = process.env.DEFAULT_PROFILE_IMAGE || '';
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || process.env.GOOGLE_VISION_API_KEY || '';
 
 // --------- Secrets Manager (옵션) ---------
 const secretsClient = new SecretsManagerClient({ region: AWS_REGION });
 async function loadSecretsIfNeeded() {
-    if (process.env.MONGODB_URI) return;
+    const needsMongo = !process.env.MONGODB_URI;
+    const needsVision = !process.env.GOOGLE_API_KEY;
+    if (!needsMongo && !needsVision) return;
     try {
         const data = await secretsClient.send(new GetSecretValueCommand({ SecretId: SECRET_NAME }));
         const parsed = JSON.parse(data.SecretString || '{}');
         Object.entries(parsed).forEach(([k, v]) => {
             if (!process.env[k]) process.env[k] = v;
         });
+        // Vision API 키 별칭 처리
+        const visionKey =
+            parsed.GOOGLE_API_KEY ||
+            parsed.GOOGLE_VISION_API_KEY ||
+            parsed.VISION_API_KEY ||
+            parsed.GCLOUD_API_KEY;
+        if (!process.env.GOOGLE_API_KEY && visionKey) {
+            process.env.GOOGLE_API_KEY = visionKey;
+        }
         console.log('✅ Secrets Manager 로드 완료');
     } catch (err) {
         console.warn('⚠️ Secrets Manager 로드 실패 (env 사용 예정):', err.message);
@@ -546,6 +558,55 @@ app.get('/api/experts', async (_req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: '전문가 목록 조회 실패' });
+    }
+});
+
+// OCR (Google Vision)
+app.post('/api/ocr/vision', async (req, res) => {
+    try {
+        if (!GOOGLE_API_KEY) {
+            return res.status(500).json({ message: 'GOOGLE_API_KEY 미설정' });
+        }
+        const base64 = (req.body?.imageBase64 || '').trim();
+        if (!base64) return res.status(400).json({ message: 'imageBase64 필요' });
+
+        const payload = {
+            requests: [
+                {
+                    image: { content: base64 },
+                    features: [
+                        { type: 'DOCUMENT_TEXT_DETECTION' },
+                        { type: 'TEXT_DETECTION' }
+                    ]
+                }
+            ]
+        };
+
+        const resp = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!resp.ok) {
+            const txt = await resp.text().catch(() => '');
+            return res.status(resp.status).json({ message: `vision error ${resp.status}`, detail: txt.slice(0, 500) });
+        }
+
+        const data = await resp.json();
+        const r = data?.responses?.[0] || {};
+        const plain = (r.fullTextAnnotation?.text || r.textAnnotations?.[0]?.description || '').trim();
+
+        // 간단히 fullText를 모두 반환. orderedText/blockOrderedText는 동일 값으로 전달
+        res.json({
+            text: plain,
+            orderedText: plain,
+            blockOrderedText: plain,
+            raw: r
+        });
+    } catch (err) {
+        console.error('[OCR Vision]', err);
+        res.status(500).json({ message: 'OCR 처리 실패' });
     }
 });
 
