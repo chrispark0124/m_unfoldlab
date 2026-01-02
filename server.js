@@ -12,8 +12,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 // 인증 전용 DB (로그인 계정)
 const AUTH_DB = process.env.MONGO_DB_AUTH || process.env.MONGO_DB || 'm_application';
-// 앱 데이터 DB (커뮤니티/전문가 등) — 기본적으로 인증 DB와 동일하게 사용
+// 커뮤니티 등 앱 데이터 DB (기본: 인증 DB와 동일, 필요 시 override)
 const APP_DB = process.env.MONGO_DB_APP || AUTH_DB || 'm_application';
+// 전문가 프로필 DB (요청: Cluster0/legalai_pro/users)
+const EXPERT_DB = process.env.MONGO_DB_EXPERT || 'legalai_pro';
 const AWS_REGION = process.env.AWS_REGION || 'ap-northeast-2';
 const SECRET_NAME = process.env.AWS_SECRETS_NAME || 'munfoldlab/prod/runtime';
 const DEFAULT_PROFILE_IMAGE = process.env.DEFAULT_PROFILE_IMAGE || '';
@@ -123,7 +125,7 @@ const expertSchema = new mongoose.Schema({
 }, { collection: 'users' });
 
 let User, Post, Like, Comment, Vote, Expert;
-let authConn, appConn;
+let authConn, appConn, expertConn;
 
 function generateReferralCode() {
     // 10자리 영문/숫자 고정, 대문자
@@ -179,15 +181,24 @@ async function initDb() {
     authConn = await mongoose.createConnection(uri, { dbName: AUTH_DB });
     User = authConn.model('User', userSchema);
 
-    // 앱 데이터 커넥션 (legalai_pro)
+    // 앱 데이터 커넥션 (커뮤니티)
     appConn = await mongoose.createConnection(uri, { dbName: APP_DB });
     Post = appConn.model('CommunityPost', postSchema);
     Like = appConn.model('CommunityLike', likeSchema);
     Comment = appConn.model('CommunityComment', commentSchema);
     Vote = appConn.model('CommunityVote', voteSchema);
-    Expert = appConn.model('Expert', expertSchema);
 
-    console.log('✅ MongoDB 연결 성공', { authDb: AUTH_DB, appDb: APP_DB });
+    // 전문가 DB 커넥션 (기본 legalai_pro/users)
+    if (EXPERT_DB === APP_DB) {
+        expertConn = appConn;
+    } else if (EXPERT_DB === AUTH_DB) {
+        expertConn = authConn;
+    } else {
+        expertConn = await mongoose.createConnection(uri, { dbName: EXPERT_DB });
+    }
+    Expert = expertConn.model('Expert', expertSchema);
+
+    console.log('✅ MongoDB 연결 성공', { authDb: AUTH_DB, appDb: APP_DB, expertDb: EXPERT_DB });
 }
 
 // --------- 유틸 ---------
